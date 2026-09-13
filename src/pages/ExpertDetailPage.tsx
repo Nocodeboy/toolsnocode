@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Globe, ExternalLink, DollarSign, Pencil } from 'lucide-react';
+import { ArrowLeft, MapPin, Globe, ExternalLink, DollarSign, Pencil } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
@@ -144,13 +144,6 @@ export default function ExpertDetailPage() {
                 <span className="flex items-center gap-1.5 text-sm text-surface-400">
                   <MapPin className="w-4 h-4" />
                   {expert.country}
-                </span>
-              )}
-              {expert.rating > 0 && (
-                <span className="flex items-center gap-1.5 text-sm text-surface-300">
-                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  {expert.rating.toFixed(1)}
-                  <span className="text-surface-500">({expert.review_count} reviews)</span>
                 </span>
               )}
               {expert.hourly_rate > 0 && (

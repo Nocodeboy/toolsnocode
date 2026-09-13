@@ -50,13 +50,11 @@ export default function TutorialDetailPage() {
       if (!slug) return;
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('tutorials')
         .select('*, tool:tools(*)')
         .eq('slug', slug)
         .maybeSingle();
-
-      if (!data && !error)
 
       if (data) {
         setTutorial(data);

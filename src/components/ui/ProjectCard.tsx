@@ -47,7 +47,7 @@ export default memo(function ProjectCard({ project }: ProjectCardProps) {
 
         <div className="flex items-center justify-between">
           <span className="text-xs text-surface-500">{project.author_name}</span>
-          <UpvoteButton itemType="projects" itemId={project.id} initialCount={project.upvotes} size="sm" />
+          <UpvoteButton itemType="projects" itemId={project.id} initialCount={project.upvotes} size="sm" showCount={false} />
         </div>
 
         {project.tools && project.tools.length > 0 && (
