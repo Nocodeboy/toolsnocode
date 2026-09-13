@@ -46,7 +46,7 @@ export default function HomePage() {
             supabase.from('tools').select('*').eq('is_boosted', true).order('boost_expires_at', { ascending: false }).limit(6),
             supabase.from('tools').select('*').eq('is_featured', true).eq('is_boosted', false).order('created_at', { ascending: false }).limit(6),
             supabase.from('tools').select('*').order('is_boosted', { ascending: false }).order('created_at', { ascending: false }).limit(6),
-            supabase.from('tools').select('*').eq('is_trending', true).order('is_boosted', { ascending: false }).order('upvotes', { ascending: false }).limit(6),
+            supabase.from('tools').select('*').order('trending_score', { ascending: false }).order('created_at', { ascending: false }).limit(6),
             supabase.from('categories').select('*').is('parent_id', null).order('sort_order'),
             supabase.from('tools').select('id', { count: 'exact', head: true }),
             supabase.from('experts').select('id', { count: 'exact', head: true }),

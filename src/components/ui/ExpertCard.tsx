@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Globe, ArrowUpRight } from 'lucide-react';
+import { MapPin, Globe, ArrowUpRight } from 'lucide-react';
 import type { Expert } from '../../types';
 
 interface ExpertCardProps {
@@ -40,13 +40,6 @@ export default memo(function ExpertCard({ expert }: ExpertCardProps) {
               <span className="flex items-center gap-1 text-xs text-surface-500">
                 <MapPin className="w-3 h-3" />
                 {expert.country}
-              </span>
-            )}
-
-            {expert.rating > 0 && (
-              <span className="flex items-center gap-1 text-xs text-surface-400">
-                <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                {expert.rating.toFixed(1)}
               </span>
             )}
 

@@ -9,9 +9,15 @@ interface UpvoteButtonProps {
   itemId: string;
   initialCount: number;
   size?: 'sm' | 'md';
+  /**
+   * `tools.upvotes` trae valores sembrados (Canva 19.800) mientras que 3.015
+   * herramientas están a cero, así que en los listados se oculta el número y
+   * se deja solo la acción, que sí es real.
+   */
+  showCount?: boolean;
 }
 
-export default function UpvoteButton({ itemType, itemId, initialCount, size = 'md' }: UpvoteButtonProps) {
+export default function UpvoteButton({ itemType, itemId, initialCount, size = 'md', showCount = true }: UpvoteButtonProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [count, setCount] = useState(initialCount);
@@ -83,7 +89,7 @@ export default function UpvoteButton({ itemType, itemId, initialCount, size = 'm
       `}
     >
       <ChevronUp className={`${isSmall ? 'w-3.5 h-3.5' : 'w-4 h-4'} transition-transform duration-200 ${voted ? 'scale-110' : ''}`} />
-      <span>{count}</span>
+      {showCount && <span>{count}</span>}
     </button>
   );
 }

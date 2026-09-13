@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, ExternalLink, Star, TrendingUp, Globe,
+  ArrowLeft, ArrowRight, ExternalLink, TrendingUp, Globe,
   Tag, BarChart3, Clock, BookOpen, Users, Rocket, Pencil, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -115,19 +115,14 @@ export default function ToolDetailPage() {
         description: tool.description || tool.tagline,
         url: tool.website || `https://toolsnocode.com/tools/${tool.slug}`,
         applicationCategory: tool.category?.name || 'WebApplication',
-        offers: {
-          '@type': 'Offer',
-          price: tool.pricing === 'free' ? '0' : undefined,
-          priceCurrency: 'USD',
-          availability: 'https://schema.org/OnlineOnly',
-        },
-        aggregateRating: tool.rating > 0 ? {
-          '@type': 'AggregateRating',
-          ratingValue: tool.rating,
-          reviewCount: tool.review_count,
-          bestRating: 5,
-          worstRating: 1,
-      } : undefined,
+        // Solo se declara Offer cuando hay un precio real que declarar: un Offer
+        // sin `price` es inválido, y es lo que se emitía para toda tool de pago.
+        ...(tool.pricing === 'free'
+          ? { offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', availability: 'https://schema.org/OnlineOnly' } }
+          : {}),
+        // Sin `aggregateRating`: esas puntuaciones son del scraper y no hay ni una
+        // reseña visible en la página. Marcar datos estructurados de valoración
+        // que el usuario no puede ver es causa documentada de acción manual.
       },
     ];
   }, [tool]);
@@ -197,7 +192,7 @@ export default function ToolDetailPage() {
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className="text-2xl sm:text-3xl font-bold text-white">{tool.name}</h1>
-              {tool.is_trending && (
+              {tool.trending_score > 0 && (
                 <span className="badge bg-amber-500/15 text-amber-400 border border-amber-500/20">
                   <TrendingUp className="w-3 h-3 mr-1" /> Trending
                 </span>
@@ -215,14 +210,7 @@ export default function ToolDetailPage() {
             <p className="text-lg text-surface-300 mb-4">{tool.tagline}</p>
 
             <div className="flex flex-wrap items-center gap-4 mb-5">
-              {tool.rating > 0 && (
-                <span className="flex items-center gap-1.5 text-sm text-surface-300">
-                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  {tool.rating.toFixed(1)}
-                  <span className="text-surface-500">({tool.review_count} reviews)</span>
-                </span>
-              )}
-              <UpvoteButton itemType="tools" itemId={tool.id} initialCount={tool.upvotes} />
+              <UpvoteButton itemType="tools" itemId={tool.id} initialCount={tool.upvotes} showCount={false} />
               <span className={`text-sm font-medium capitalize ${pricingColor[tool.pricing] || ''}`}>
                 {tool.pricing}
               </span>
