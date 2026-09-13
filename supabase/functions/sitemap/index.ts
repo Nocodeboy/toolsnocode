@@ -124,25 +124,16 @@ Deno.serve(async (req: Request) => {
      * enlazan al catálogo entero. Sin ellas el sitemap solo ofrecía la home y
      * 3.075 fichas sueltas, sin nada en medio.
      *
-     * Con una excepción, que se retira en cuanto se recategoricen sus filas:
-     * `three-d` no contiene 3D. Es la segunda categoría con más altas de
-     * makers del directorio (33 herramientas, 33 makers), y de las 30 más
-     * recientes exactamente una trata de 3D: el resto son estudios de tatuaje,
-     * telemedicina, señales de forex, astrología. La causa es que "3D & AR/VR"
-     * empieza por un dígito y encabezaba un desplegable ordenado por nombre.
-     *
-     * Anunciar esa página es pedirle a Google que compare un texto sobre
-     * topología de malla con una lista de estudios de tatuaje, justo después
-     * de haber sacado del índice 12.000 páginas por ese mismo motivo. Sigue
-     * navegable; solo deja de anunciarse.
+     * `three-d` estuvo fuera de esta lista mientras 32 de sus 54 filas eran
+     * estudios de tatuaje y plataformas de telemedicina bajo un texto sobre
+     * topología de malla. Recategorizadas, la página describe lo que enseña y
+     * vuelve a anunciarse.
      */
-    const MISCATEGORISED = new Set(["three-d"]);
 
     if (categoryPagesLive) {
       xml += `\n  <url><loc>${BASE_URL}/categories</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
 
       for (const category of categories) {
-        if (MISCATEGORISED.has(category.slug)) continue;
         xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
       }
     }
