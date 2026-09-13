@@ -97,7 +97,13 @@ export default function ToolsPage() {
       // degrada solo a "más recientes", que es lo honesto sin datos.
       query = query.order('trending_score', { ascending: false }).order('created_at', { ascending: false });
     } else if (sortBy === 'boosted') {
-      query = query.eq('is_boosted', true).order('boost_expires_at', { ascending: false });
+      // `nullsFirst: false` no es cosmético: en Postgres un DESC pone los NULL
+      // los primeros, así que un Boost sin fecha de caducidad encabezaba esta
+      // lista para siempre, por delante de cualquiera que hubiera pagado.
+      query = query
+        .eq('is_boosted', true)
+        .order('boost_expires_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
     } else if (sortBy === 'featured') {
       query = query.eq('is_featured', true).eq('is_boosted', false).order('created_at', { ascending: false });
     } else {

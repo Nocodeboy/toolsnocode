@@ -66,6 +66,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Handler failed' }, { status: 500 });
     }
 
+    // La barrida de Boosts caducados vive ahora en pg_cron (`expire-stale-boosts`,
+    // diaria). Colgarla del webhook significaba que un Boost solo caducaba si
+    // OTRO cliente estaba pagando en ese momento — con un único cliente, nunca.
+    // Se mantiene aquí como red de seguridad, no como mecanismo.
     EdgeRuntime.waitUntil(
       deactivateExpiredBoosts().catch(err => console.error('Expired boost cleanup error:', err))
     );
@@ -182,9 +186,12 @@ async function handleEvent(event: Stripe.Event) {
 
 async function syncCustomerFromStripe(customerId: string) {
   try {
+    // `limit: 1` cogía la suscripción más reciente, que no es necesariamente la
+    // que está pagando: un cliente que cancela y vuelve deja una cancelada por
+    // delante. Se piden varias y se elige por estado.
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      limit: 1,
+      limit: 10,
       status: 'all',
       expand: ['data.default_payment_method'],
     });
@@ -210,7 +217,9 @@ async function syncCustomerFromStripe(customerId: string) {
       return;
     }
 
-    const subscription = subscriptions.data[0];
+    const LIVE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'];
+    const subscription =
+      subscriptions.data.find((sub) => LIVE_STATUSES.includes(sub.status)) ?? subscriptions.data[0];
 
     const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
       {
@@ -240,10 +249,16 @@ async function syncCustomerFromStripe(customerId: string) {
 
     const toolId = subscription.metadata?.tool_id;
 
-    if (subscription.status === 'active' && toolId) {
+    if (['active', 'trialing'].includes(subscription.status) && toolId) {
       await activateBoost(customerId, toolId, subscription.current_period_end);
-    } else if (['canceled', 'unpaid', 'incomplete_expired', 'past_due'].includes(subscription.status)) {
+    } else if (['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
+      // `past_due` ya no entra aquí. Stripe reintenta un cobro fallido durante
+      // semanas antes de rendirse y pasar a `unpaid`; apagar el Boost al primer
+      // fallo le quitaba al cliente lo que ha pagado por una tarjeta que casi
+      // siempre acaba pasando. `unpaid` y `canceled` sí son el final del camino.
       await deactivateBoostForCustomer(customerId, toolId);
+    } else if (subscription.status === 'past_due') {
+      console.info(`Customer ${customerId} is past_due; boost kept while Stripe retries`);
     }
 
     console.info(`Successfully synced subscription for customer: ${customerId}`);

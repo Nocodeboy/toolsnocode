@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       return corsResponse({ error: `price_id ${price_id} requires mode ${allowedPrice.mode}` }, 400, reqOrigin);
     }
 
+
     // Validate redirect URLs to prevent open redirect attacks
     for (const url of [success_url, cancel_url]) {
       try {
@@ -102,6 +103,39 @@ Deno.serve(async (req) => {
 
     if (!user) {
       return corsResponse({ error: 'User not found' }, 404, reqOrigin);
+    }
+
+    /**
+     * El Boost impulsa una herramienta concreta, y `tool_id` es lo que el
+     * webhook lee de los metadatos para activarlo. Dos formas de cobrar sin
+     * activar nada, ambas silenciosas para quien paga:
+     *
+     *  - sin `tool_id`: la suscripción se crea y el webhook no tiene a qué
+     *    aplicarla;
+     *  - con el `tool_id` de otro: `activateBoost` filtra por `user_id`, así
+     *    que el update no toca ninguna fila y el cobro se queda sin efecto.
+     *
+     * Las dos se cierran aquí, antes de cobrar, donde todavía se puede
+     * devolver un error que el cliente vea.
+     */
+    if (!tool_id || typeof tool_id !== 'string') {
+      return corsResponse({ error: 'tool_id is required: a boost has to point at a tool' }, 400, reqOrigin);
+    }
+
+    const { data: ownedTool, error: toolLookupError } = await supabase
+      .from('tools')
+      .select('id')
+      .eq('id', tool_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (toolLookupError) {
+      console.error('Failed to verify tool ownership:', toolLookupError);
+      return corsResponse({ error: 'Could not verify the tool' }, 500, reqOrigin);
+    }
+
+    if (!ownedTool) {
+      return corsResponse({ error: 'That tool does not exist or is not yours' }, 403, reqOrigin);
     }
 
     const { data: customer, error: getCustomerError } = await supabase
@@ -238,11 +272,9 @@ Deno.serve(async (req) => {
       cancel_url,
     };
 
-    if (tool_id && typeof tool_id === 'string') {
-      sessionParams.metadata = { tool_id };
-      if (mode === 'subscription') {
-        sessionParams.subscription_data = { metadata: { tool_id } };
-      }
+    sessionParams.metadata = { tool_id };
+    if (mode === 'subscription') {
+      sessionParams.subscription_data = { metadata: { tool_id } };
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
