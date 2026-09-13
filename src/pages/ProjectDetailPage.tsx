@@ -133,7 +133,7 @@ export default function ProjectDetailPage() {
           <span className="text-sm text-surface-400">
             By <span className="text-surface-200">{project.author_name}</span>
           </span>
-          <UpvoteButton itemType="projects" itemId={project.id} initialCount={project.upvotes} />
+          <UpvoteButton itemType="projects" itemId={project.id} initialCount={project.upvotes} showCount={false} />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
