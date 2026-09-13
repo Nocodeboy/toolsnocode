@@ -25,6 +25,8 @@ export interface Tool {
   rating: number;
   review_count: number;
   upvotes: number;
+  description_long: string | null;
+  enriched_at: string | null;
   views_30d: number;
   clicks_30d: number;
   trending_score: number;

@@ -64,10 +64,21 @@ Deno.serve(async (req: Request) => {
       return rows;
     }
 
-    const [tools, experts, tutorials, projects, news] = await Promise.all([
+    /**
+     * `experts` y `tutorials` no emiten fichas individuales a propósito.
+     *
+     * Medido sobre una muestra de 1.000 filas de cada tabla: la mediana de la
+     * biografía de un experto son 10 palabras, y 999 de cada 1.000 tutoriales
+     * tienen la descripción vacía (la tabla ni siquiera tiene campo de cuerpo).
+     * Son ~12.000 páginas sin contenido propio, y Google evalúa la calidad a
+     * nivel de dominio: publicarlas no suma inventario, arrastra a las 3.075
+     * fichas de herramienta que sí pueden competir.
+     *
+     * Las páginas siguen existiendo y navegables; solo dejan de anunciarse.
+     * Cuando tengan contenido real, se vuelven a añadir aquí.
+     */
+    const [tools, projects, news] = await Promise.all([
       fetchAll("tools", "updated_at"),
-      fetchAll("experts", "created_at"),
-      fetchAll("tutorials", "created_at"),
       fetchAll("projects", "created_at"),
       fetchAll("news", "published_at"),
     ]);
@@ -92,20 +103,6 @@ Deno.serve(async (req: Request) => {
         ? tool.lastmod.split("T")[0]
         : today;
       xml += `\n  <url><loc>${BASE_URL}/tools/${xmlEscape(tool.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
-    }
-
-    for (const expert of experts) {
-      const lastmod = expert.lastmod
-        ? expert.lastmod.split("T")[0]
-        : today;
-      xml += `\n  <url><loc>${BASE_URL}/experts/${xmlEscape(expert.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
-    }
-
-    for (const tutorial of tutorials) {
-      const lastmod = tutorial.lastmod
-        ? tutorial.lastmod.split("T")[0]
-        : today;
-      xml += `\n  <url><loc>${BASE_URL}/tutorials/${xmlEscape(tutorial.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
     }
 
     for (const project of projects) {
