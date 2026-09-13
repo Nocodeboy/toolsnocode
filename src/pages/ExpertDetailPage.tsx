@@ -16,6 +16,7 @@ export default function ExpertDetailPage() {
   const [expert, setExpert] = useState<Expert | null>(null);
   const [tools, setTools] = useState<(Tool & { _proficiency?: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   const handleClaimed = () => {
     setExpert((prev) => prev ? { ...prev, user_id: user?.id } : prev);
@@ -26,13 +27,14 @@ export default function ExpertDetailPage() {
       if (!slug) return;
       setLoading(true);
 
-      const { data: expertData } = await supabase
+      const { data: expertData, error: expertError } = await supabase
         .from('experts')
         .select('*')
         .eq('slug', slug)
         .maybeSingle();
 
       if (!expertData) {
+        setNotFound(!expertError);
         setLoading(false);
         return;
       }
@@ -84,6 +86,8 @@ export default function ExpertDetailPage() {
     url: expert ? `/experts/${expert.slug}` : undefined,
     type: 'profile',
     jsonLd,
+    // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
+    noindex: notFound,
   });
 
   if (loading) {

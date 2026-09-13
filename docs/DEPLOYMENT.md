@@ -106,6 +106,20 @@ Definidos en migraciones (`pg_cron`). No requieren deploy separado — se crean 
 
 Estos toggles no están automatizados y hay que activarlos en el dashboard de Supabase:
 
+- **Secretos de Vault para el cron de noticias** (`Database → Vault`). **Sin esto el cron no funciona y no avisa.** La migración `20260416114149_cron_use_vault_secret.sql` termina su consulta en `WHERE EXISTS (SELECT 1 FROM vault.decrypted_secrets WHERE name = 'cron_shared_secret')`: si el secreto no existe, el job se ejecuta cada día a las 07:00, no hace nada y no registra ningún error. Hay que crear dos secretos a mano:
+  - `supabase_anon_key` — la anon JWT del proyecto.
+  - `cron_shared_secret` — una cadena aleatoria que debe coincidir con el valor de `CRON_SECRET` en los secrets de la función `fetch-and-rewrite-news`.
+
+  Comprobar que funciona:
+  ```sql
+  -- ¿se está ejecutando y con qué resultado?
+  select jobname, status, return_message, start_time
+  from cron.job_run_details order by start_time desc limit 20;
+
+  -- ¿ha entrado contenido nuevo? (si esto se queda atrás, el pipeline está muerto)
+  select max(created_at) from news;
+  ```
+
 - **Leaked Password Protection**: `Authentication → Providers → Email → Check passwords against HaveIBeenPwned`. Recomendado.
 - **Email templates**: `Authentication → Email Templates`. Personalizar sender + plantillas de confirmación.
 - **Auth providers**: si se añade Google/GitHub, configurar credenciales OAuth.

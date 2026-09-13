@@ -64,7 +64,10 @@ export function useSEO({ title, description, image, url, type = 'website', noind
     const fullDescription = description || 'The ultimate discovery hub for AI and No-Code tools. Compare stacks, find experts, learn tutorials, and showcase projects built without code.';
     const fullImage = image || DEFAULT_OG_IMAGE;
     const isDefaultImage = fullImage === DEFAULT_OG_IMAGE;
-    const fullUrl = url ? `${BASE_URL}${url}` : BASE_URL;
+    // Sin `url` explícita (registro cargando o inexistente) la canónica es la propia
+    // ruta, nunca la home: apuntarla a la home marca cada página como duplicada.
+    const path = url ?? window.location.pathname;
+    const fullUrl = `${BASE_URL}${path}`;
 
     document.title = fullTitle;
 
