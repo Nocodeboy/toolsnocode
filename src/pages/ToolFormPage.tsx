@@ -109,6 +109,29 @@ export default function ToolFormPage() {
     const newSlug = generateSlug(form.name);
     const screenshots = screenshotUrls.map((u) => u.trim()).filter(Boolean);
 
+    /**
+     * La categoría deja de ser opcional, y el desplegable deja de tener una
+     * primera opción elegible.
+     *
+     * "3D & AR/VR" es la segunda categoría con más altas de makers de todo el
+     * directorio: 33 herramientas de 33 makers distintos. Casi ninguna es 3D —
+     * hay estudios de tatuaje de Carolina del Norte, una plataforma de
+     * telemedicina, copiadores de señales de Telegram y astrología védica. Lo
+     * que tiene de especial esa categoría no es su temática: es que empieza por
+     * un dígito, así que encabeza una lista ordenada por nombre. La primera
+     * opción de un desplegable no es una opción, es el valor por defecto de
+     * quien tiene prisa.
+     *
+     * Se nota ahora porque cada categoría tiene por fin una página con texto
+     * propio: el copy de `/categories/three-d` habla de topología de malla
+     * sobre una lista de estudios de tatuaje.
+     */
+    if (!form.category_id) {
+      setError('Pick a category — it decides which page your tool appears on.');
+      setSaving(false);
+      return;
+    }
+
     const trimmedVideo = form.video_url.trim();
     if (isEdit && isBoosted && trimmedVideo && !parseVideoUrl(trimmedVideo)) {
       setError('Demo video URL must be a valid YouTube, Vimeo, or Loom link.');
@@ -124,7 +147,7 @@ export default function ToolFormPage() {
       website: form.website,
       logo_url: form.logo_url,
       screenshot_urls: screenshots,
-      category_id: form.category_id || null,
+      category_id: form.category_id,
       pricing: form.pricing,
       pricing_details: form.pricing_details,
       tags: tagsArr,
@@ -316,8 +339,13 @@ export default function ToolFormPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
               <label className="block text-sm font-medium text-surface-300 mb-1.5">Category</label>
-              <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className="input-field">
-                <option value="">No category</option>
+              <select
+                value={form.category_id}
+                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                className="input-field"
+                required
+              >
+                <option value="" disabled>Choose a category…</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}

@@ -101,12 +101,27 @@ Deno.serve(async (req: Request) => {
   <url><loc>${BASE_URL}/legal/cookies</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`;
 
     /**
-     * Las 33 fichas de categoría van con prioridad alta a propósito: son las
+     * Las fichas de categoría van con prioridad alta a propósito: son las
      * únicas páginas del sitio que tienen texto editorial propio y, a la vez,
      * enlazan al catálogo entero. Sin ellas el sitemap solo ofrecía la home y
      * 3.075 fichas sueltas, sin nada en medio.
+     *
+     * Con una excepción, que se retira en cuanto se recategoricen sus filas:
+     * `three-d` no contiene 3D. Es la segunda categoría con más altas de
+     * makers del directorio (33 herramientas, 33 makers), y de las 30 más
+     * recientes exactamente una trata de 3D: el resto son estudios de tatuaje,
+     * telemedicina, señales de forex, astrología. La causa es que "3D & AR/VR"
+     * empieza por un dígito y encabezaba un desplegable ordenado por nombre.
+     *
+     * Anunciar esa página es pedirle a Google que compare un texto sobre
+     * topología de malla con una lista de estudios de tatuaje, justo después
+     * de haber sacado del índice 12.000 páginas por ese mismo motivo. Sigue
+     * navegable; solo deja de anunciarse.
      */
+    const MISCATEGORISED = new Set(["three-d"]);
+
     for (const category of categories) {
+      if (MISCATEGORISED.has(category.slug)) continue;
       xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
     }
 
