@@ -42,7 +42,6 @@ export default function TutorialDetailPage() {
   const [tool, setTool] = useState<Tool | null>(null);
   const [relatedTutorials, setRelatedTutorials] = useState<Tutorial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [videoActive, setVideoActive] = useState(false);
   const [embedFailed, setEmbedFailed] = useState(false);
 
@@ -57,8 +56,7 @@ export default function TutorialDetailPage() {
         .eq('slug', slug)
         .maybeSingle();
 
-      // Un 404 real es consulta correcta y cero filas; un error deja data en null igual.
-      if (!data && !error) setNotFound(true);
+      if (!data && !error)
 
       if (data) {
         setTutorial(data);
@@ -116,8 +114,11 @@ export default function TutorialDetailPage() {
     url: tutorial ? `/tutorials/${tutorial.slug}` : undefined,
     type: 'article',
     jsonLd,
-    // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
-    noindex: notFound,
+    // Sin contenido propio que indexar: la mediana de una bio de experto son 10
+    // palabras y 999 de cada 1.000 tutoriales tienen la descripción vacía. Las
+    // páginas siguen siendo navegables; simplemente no van al índice hasta que
+    // tengan algo que decir. Se revierte quitando esta línea.
+    noindex: true,
   });
 
   if (loading) {
