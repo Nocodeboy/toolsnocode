@@ -1,18 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Users, BookOpen, Rocket, Search, TrendingUp, Zap, Clock, Star } from 'lucide-react';
+import { ArrowRight, Sparkles, Users, BookOpen, Rocket, Search, TrendingUp, Zap, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Tool, Category } from '../types';
 import ToolCard from '../components/ui/ToolCard';
-import CategoryCard from '../components/ui/CategoryCard';
+import ToolRow from '../components/ui/ToolRow';
+import SectionHeader from '../components/ui/SectionHeader';
 import { useSEO, BASE_URL } from '../hooks/useSEO';
+import { STRIPE_PRODUCTS } from '../stripe-config';
+
+// El precio estaba escrito a mano en dos sitios de esta página. Sale del mismo
+// sitio que el checkout o acabará diciendo una cifra que nadie cobra.
+const boost = STRIPE_PRODUCTS[0];
+const boostPrice = boost
+  ? `$${boost.price.toFixed(2)}/${boost.mode === 'subscription' ? 'yr' : 'once'}`
+  : '';
 
 export default function HomePage() {
   const [boostedTools, setBoostedTools] = useState<Tool[]>([]);
   const [editorsPicks, setEditorsPicks] = useState<Tool[]>([]);
   const [newestTools, setNewestTools] = useState<Tool[]>([]);
   const [trendingTools, setTrendingTools] = useState<Tool[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Array<Category & { tool_count: number }>>([]);
   const [stats, setStats] = useState({ tools: 0, experts: 0, tutorials: 0, projects: 0 });
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -41,13 +50,23 @@ export default function HomePage() {
   useEffect(() => {
     async function load() {
       try {
-        const [boostedRes, pickRes, newestRes, trendingRes, catRes, toolCount, expertCount, tutorialCount, projectCount] =
+        const [boostedRes, pickRes, newestRes, trendingRes, catRes, countRes, toolCount, expertCount, tutorialCount, projectCount] =
           await Promise.all([
             supabase.from('tools').select('*').eq('is_boosted', true).order('boost_expires_at', { ascending: false }).limit(6),
             supabase.from('tools').select('*').eq('is_featured', true).eq('is_boosted', false).order('created_at', { ascending: false }).limit(6),
-            supabase.from('tools').select('*').order('is_boosted', { ascending: false }).order('created_at', { ascending: false }).limit(6),
-            supabase.from('tools').select('*').order('trending_score', { ascending: false }).order('created_at', { ascending: false }).limit(6),
-            supabase.from('categories').select('*').is('parent_id', null).order('sort_order'),
+            supabase.from('tools').select('*, category:categories(*)').order('created_at', { ascending: false }).limit(8),
+            // `.gt('trending_score', 0)` es la diferencia entre una sección y un
+            // duplicado. Con todos los scores a cero esta consulta ordenaba por
+            // `created_at` y devolvía exactamente lo mismo que "Recently Added":
+            // cinco de seis herramientas, en el mismo orden, una sección más
+            // abajo. Ahora, sin datos de comportamiento, no devuelve nada y la
+            // sección no se dibuja.
+            supabase.from('tools').select('*, category:categories(*)').gt('trending_score', 0).order('trending_score', { ascending: false }).limit(6),
+            // Dos consultas y se juntan aquí: PostgREST no infiere la relación
+            // entre `categories` y la vista `category_tool_counts`, así que el
+            // embebido `!inner(...)` devuelve un array vacío sin dar error.
+            supabase.from('categories').select('*').is('parent_id', null),
+            supabase.from('category_tool_counts').select('category_id, tool_count'),
             supabase.from('tools').select('id', { count: 'exact', head: true }),
             supabase.from('experts').select('id', { count: 'exact', head: true }),
             supabase.from('tutorials').select('id', { count: 'exact', head: true }),
@@ -58,7 +77,18 @@ export default function HomePage() {
         if (pickRes.data) setEditorsPicks(pickRes.data);
         if (newestRes.data) setNewestTools(newestRes.data);
         if (trendingRes.data) setTrendingTools(trendingRes.data);
-        if (catRes.data) setCategories(catRes.data);
+        if (catRes.data) {
+          const counts = new Map<string, number>(
+            (countRes.data ?? []).map((r) => [r.category_id as string, r.tool_count as number]),
+          );
+          // Por tamaño: la home enseña por dónde hay algo que mirar, no el orden
+          // en que se crearon las categorías.
+          setCategories(
+            catRes.data
+              .map((c) => ({ ...c, tool_count: counts.get(c.id) ?? 0 }))
+              .sort((a, b) => b.tool_count - a.tool_count),
+          );
+        }
         setStats({
           tools: toolCount.count || 0,
           experts: expertCount.count || 0,
@@ -138,51 +168,65 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* La tira de categorías va aquí, pegada al hero: es navegación, y la
+          navegación se pone donde alguien acaba de decidir que no va a escribir
+          en el buscador. Antes eran 33 iconos idénticos en verde a mitad de
+          página, que a esa escala no se leen como 33 destinos sino como textura. */}
+      {categories.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 -mt-4">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {categories.slice(0, 10).map((cat, i) => (
+              <Link
+                key={cat.id}
+                to={`/categories/${cat.slug}`}
+                // Diez pastillas son seis filas en un móvil de 390px: toda la
+                // primera pantalla después del hero gastada en navegación. Seis
+                // caben en dos.
+                className={`group items-center gap-2 px-3.5 py-2 rounded-full bg-surface-900/70 border border-surface-800 hover:border-surface-600 hover:bg-surface-900 transition-colors ${
+                  i >= 6 ? 'hidden sm:inline-flex' : 'inline-flex'
+                }`}
+              >
+                <span className="text-sm text-surface-200 group-hover:text-white transition-colors">{cat.name}</span>
+                <span className="text-xs text-surface-600 tabular-nums">{cat.tool_count}</span>
+              </Link>
+            ))}
+            <Link
+              to="/categories"
+              className="inline-flex items-center gap-1 px-3.5 py-2 text-sm text-brand-400 hover:text-brand-300 transition-colors"
+            >
+              All {categories.length} categories
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </section>
+      )}
+
       {boostedTools.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="relative overflow-hidden rounded-2xl border border-brand-500/20 bg-gradient-to-b from-brand-500/[0.06] via-transparent to-transparent p-6 sm:p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/[0.08] via-transparent to-transparent pointer-events-none" />
-            <div className="relative">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center">
-                    <Rocket className="w-5 h-5 text-brand-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-bold text-white">Boosted Tools</h2>
-                    <p className="text-sm text-surface-400 mt-0.5">Sponsored picks from the community</p>
-                  </div>
-                </div>
-                <Link to="/tools?sort=boosted" className="text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1 transition-colors">
-                  View all <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {boostedTools.map((tool) => (
-                  <ToolCard key={tool.id} tool={tool} />
-                ))}
-              </div>
-            </div>
+          <SectionHeader
+            title="Boosted"
+            subtitle="Paid placement by the people who made them"
+            icon={Rocket}
+            tone="violet"
+            href="/tools?sort=boosted"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {boostedTools.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} />
+            ))}
           </div>
         </section>
       )}
 
       {editorsPicks.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Editor's Picks</h2>
-                <p className="text-sm text-surface-400 mt-0.5">Hand-selected by our team</p>
-              </div>
-            </div>
-            <Link to="/tools?sort=featured" className="text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1 transition-colors">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+          <SectionHeader
+            title="Editor's Picks"
+            subtitle="Hand-selected by our team"
+            icon={Sparkles}
+            tone="amber"
+            href="/tools?sort=featured"
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {editorsPicks.map((tool) => (
               <ToolCard key={tool.id} tool={tool} />
@@ -191,99 +235,39 @@ export default function HomePage() {
         </section>
       )}
 
-      {categories.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-white">Browse Categories</h2>
-            <Link to="/tools" className="text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1 transition-colors">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {categories.map((cat) => (
-              <CategoryCard key={cat.id} category={cat} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <Link
-          to="/pricing"
-          className="block group relative overflow-hidden rounded-2xl border border-brand-500/25 bg-gradient-to-r from-brand-500/10 via-surface-900/60 to-emerald-500/10 hover:border-brand-500/45 hover:from-brand-500/15 hover:to-emerald-500/15 transition-all duration-300 p-6 sm:p-8"
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand-500/8 via-transparent to-transparent" />
-          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center flex-shrink-0">
-                <Rocket className="w-6 h-6 text-brand-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-base font-bold text-white">
-                    Is your tool listed here?
-                  </p>
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20">
-                    <Star className="w-3 h-3 text-brand-400 fill-brand-400/30" />
-                    <span className="text-[10px] font-semibold text-brand-400 uppercase tracking-wide">Boost Plan</span>
-                  </span>
-                </div>
-                <p className="text-sm text-surface-400 leading-relaxed">
-                  Boost it to appear first in every listing, on the homepage Featured section, and in search results.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <span className="hidden sm:block text-sm text-surface-500">from $49.90/yr</span>
-              <span className="btn-primary text-sm py-2 px-4 group-hover:scale-105 transition-transform">
-                Boost My Tool
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </div>
-          </div>
-        </Link>
-      </section>
-
       {newestTools.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Recently Added</h2>
-                <p className="text-sm text-surface-500 mt-0.5">The latest tools in the directory</p>
-              </div>
-            </div>
-            <Link to="/tools?sort=newest" className="text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1 transition-colors">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SectionHeader
+            title="Recently Added"
+            subtitle="The latest tools in the directory"
+            icon={Clock}
+            tone="brand"
+            href="/tools?sort=newest"
+          />
+          {/* Lista, no rejilla. Tres rejillas de tarjetas seguidas son el mismo
+              bloque tres veces; a esta distancia el color del icono de la
+              cabecera no las distingue. Una lista es otra forma, y además cabe
+              la categoría y la fecha, que en la tarjeta no se ven. */}
+          <div className="divide-y divide-surface-800/60">
             {newestTools.map((tool) => (
-              <ToolCard key={tool.id} tool={tool} />
+              <ToolRow key={tool.id} tool={tool} showDate />
             ))}
           </div>
         </section>
       )}
 
+      {/* Sin `trending_score > 0` esta sección no existe. No es una decisión de
+          diseño: la consulta filtra por comportamiento real, y mientras no lo
+          haya no hay nada que enseñar que no esté ya en "Recently Added". */}
       {trendingTools.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-amber-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Trending Now</h2>
-                <p className="text-sm text-surface-500 mt-0.5">Most popular this week</p>
-              </div>
-            </div>
-            <Link to="/tools?sort=trending" className="text-sm text-brand-400 hover:text-brand-300 flex items-center gap-1 transition-colors">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+          <SectionHeader
+            title="Trending"
+            subtitle="What people are actually opening this week"
+            icon={TrendingUp}
+            tone="sky"
+            href="/tools?sort=trending"
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {trendingTools.map((tool) => (
               <ToolCard key={tool.id} tool={tool} />
@@ -292,68 +276,37 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Submit your tool CTA */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Link
-            to="/tools/new"
-            className="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 to-surface-900/60 hover:border-emerald-500/35 transition-all duration-300 p-6"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <Zap className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-white mb-1">Submit your tool — it's free</p>
-                <p className="text-xs text-surface-500 leading-relaxed mb-3">Get discovered by thousands of builders looking for tools like yours.</p>
-                <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                  Add your tool <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/pricing"
-            className="group relative overflow-hidden rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-500/8 to-surface-900/60 hover:border-brand-500/35 transition-all duration-300 p-6"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-5 h-5 text-brand-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-white mb-1">Already listed? Boost it</p>
-                <p className="text-xs text-surface-500 leading-relaxed mb-3">Priority positioning, featured placement, demo video, and analytics. From $49.90/yr.</p>
-                <span className="text-xs font-semibold text-brand-400 flex items-center gap-1 group-hover:gap-2 transition-all">
-                  See Boost plans <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </section>
-
+      {/* Un solo bloque de conversión, al final. Antes había tres llamadas a
+          /pricing en la misma página: el banner grande de en medio, esta
+          tarjeta, y la propia sección de Boosted. Repetir la petición no la
+          hace más convincente, solo más difícil de ignorar el resto. */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="glass-card p-8 sm:p-12 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-500/5 via-transparent to-brand-500/5" />
-          <div className="relative">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-              Ready to discover your next stack?
-            </h2>
-            <p className="text-surface-400 mb-8 max-w-lg mx-auto">
-              Explore thousands of AI and no-code tools. Find the perfect combination for your next project.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/tools" className="btn-primary">
-                <Search className="w-4 h-4" />
-                Explore Tools
-              </Link>
-              <Link to="/experts" className="btn-secondary">
-                <Users className="w-4 h-4" />
-                Find Experts
-              </Link>
+        <div className="grid sm:grid-cols-2 gap-px bg-surface-800/60 rounded-2xl overflow-hidden border border-surface-800/60">
+          <Link to="/tools/new" className="group bg-surface-950 hover:bg-surface-900/70 transition-colors p-7 sm:p-8">
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mb-4">
+              <Zap className="w-4 h-4 text-brand-400" />
             </div>
-          </div>
+            <p className="text-base font-semibold text-white mb-1.5">Submit your tool — it's free</p>
+            <p className="text-sm text-surface-500 leading-relaxed mb-4">
+              {stats.tools.toLocaleString()} tools are listed. Adding yours takes a few minutes and costs nothing.
+            </p>
+            <span className="text-sm font-medium text-brand-400 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+              Add your tool <ArrowRight className="w-4 h-4" />
+            </span>
+          </Link>
+
+          <Link to="/pricing" className="group bg-surface-950 hover:bg-surface-900/70 transition-colors p-7 sm:p-8">
+            <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
+              <Rocket className="w-4 h-4 text-violet-300" />
+            </div>
+            <p className="text-base font-semibold text-white mb-1.5">Already listed? Boost it</p>
+            <p className="text-sm text-surface-500 leading-relaxed mb-4">
+              A full-width card at the top of every listing, a demo video on your page, and the numbers behind it.
+            </p>
+            <span className="text-sm font-medium text-violet-300 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+              See Boost — {boostPrice} <ArrowRight className="w-4 h-4" />
+            </span>
+          </Link>
         </div>
       </section>
     </div>
