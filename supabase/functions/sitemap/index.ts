@@ -132,15 +132,13 @@ Deno.serve(async (req: Request) => {
     // Sin este log, un fallo de consulta era indistinguible de un catálogo vacío:
     // así fue como desaparecieron 12.000 URLs sin que nadie se enterara.
     console.error("sitemap generation failed:", err);
-    return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`,
-      {
-        status: 500,
-        headers: {
-          ...getCorsHeaders(req),
-          "Content-Type": "application/xml; charset=utf-8",
-        },
-      }
-    );
+
+    // Y nunca un <urlset> vacío: eso le dice a Google "este sitio no tiene
+    // URLs" y puede costar lo ya indexado. Un 500 sin XML le dice "vuelve
+    // luego", que es lo que de verdad ocurre.
+    return new Response("sitemap temporarily unavailable", {
+      status: 500,
+      headers: { ...getCorsHeaders(req), "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
 });
