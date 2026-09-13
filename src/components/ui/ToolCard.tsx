@@ -88,7 +88,10 @@ export default memo(function ToolCard({ tool }: ToolCardProps) {
               alt=""
               width={256}
               height={144}
-              className="hidden lg:block w-64 h-36 object-cover rounded-xl border border-surface-700/50 flex-shrink-0"
+              // Sin `flex-shrink-0` y con tope relativo: la tarjeta también se
+              // renderiza en celdas estrechas (cuenta, favoritos), donde un
+              // ancho fijo de 256px se desbordaría.
+              className="hidden lg:block w-64 max-w-[40%] h-36 object-cover rounded-xl border border-surface-700/50"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           )}
