@@ -8,7 +8,7 @@ Directorio de herramientas no-code, expertos, tutoriales, proyectos y noticias d
 - **Backend**: Supabase (Postgres con RLS, Auth, Storage `uploads` bucket, Edge Functions en Deno).
 - **Integraciones**: Stripe (Checkout + Webhooks), OpenAI (reescritura de noticias), DNS verification para reclamación de tools.
 - **Scraper**: servicio Python aparte (`../scraper/`) que alimenta las tablas `tools`, `experts`, `tutorials`.
-- **Deploy**: Bolt.new (frontend) + Supabase (DB/Functions).
+- **Deploy**: Vercel (frontend) + Supabase (DB/Functions).
 
 ## Quickstart
 

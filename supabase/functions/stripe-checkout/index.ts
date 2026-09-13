@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
+import { isAllowedRedirectUrl, resolveOrigin } from '../_shared/cors.ts';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -11,15 +12,13 @@ const stripe = new Stripe(stripeSecret, {
   },
 });
 
-const ALLOWED_ORIGINS = ['https://toolsnocode.com', 'http://localhost:5173', 'http://localhost:4173'];
-
 const ALLOWED_PRICES: Record<string, { mode: 'subscription' | 'payment' }> = {
   price_1PrIksIs6L3hD9y66zoxwAX9: { mode: 'subscription' },
 };
 
 // Helper function to create responses with CORS headers
 function corsResponse(body: string | object | null, status = 200, requestOrigin?: string) {
-  const origin = requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0];
+  const origin = resolveOrigin(requestOrigin);
   const headers = {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -78,12 +77,12 @@ Deno.serve(async (req) => {
     // Validate redirect URLs to prevent open redirect attacks
     for (const url of [success_url, cancel_url]) {
       try {
-        const parsed = new URL(url);
-        if (!ALLOWED_ORIGINS.some((origin) => parsed.origin === origin)) {
-          return corsResponse({ error: `Invalid redirect URL: ${url}` }, 400, reqOrigin);
-        }
+        new URL(url);
       } catch {
         return corsResponse({ error: `Malformed URL: ${url}` }, 400, reqOrigin);
+      }
+      if (!isAllowedRedirectUrl(url)) {
+        return corsResponse({ error: `Invalid redirect URL: ${url}` }, 400, reqOrigin);
       }
     }
 

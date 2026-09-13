@@ -1,17 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const ALLOWED_ORIGINS = ["https://toolsnocode.com", "http://localhost:5173", "http://localhost:4173"];
+import { getCorsHeaders as buildCorsHeaders } from "../_shared/cors.ts";
 
 function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("Origin") ?? "";
-  return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-  };
+  return buildCorsHeaders(req, "GET, OPTIONS");
 }
 
-const BASE_URL = "https://toolsnocode.com";
+// Canonical public origin the sitemap advertises. Override with the SITE_URL
+// secret when the frontend moves host, so the URLs never point at the old one.
+const BASE_URL = Deno.env.get("SITE_URL") ?? "https://toolsnocode.com";
 
 function xmlEscape(value: string): string {
   return value
