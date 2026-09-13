@@ -84,13 +84,31 @@ Deno.serve(async (req: Request) => {
       fetchAll("categories", "created_at"),
     ]);
 
+    /**
+     * Las páginas de categoría son frontend, y esta función no lo es.
+     *
+     * Desplegar esta función alcanza producción al instante; la ruta
+     * `/categories/:slug` viaja en la build de Vercel y llega cuando se fusiona
+     * su rama. Entre un momento y el otro el sitemap anuncia 33 URLs que el SPA
+     * resuelve con su página 404 — soft 404s, justo lo que acabamos de sacar
+     * del índice.
+     *
+     * Así que el anuncio va detrás de un interruptor explícito. Cuando la build
+     * con `/categories` esté en producción:
+     *
+     *     supabase secrets set CATEGORY_PAGES_LIVE=true
+     *
+     * y aparecen sin tocar una línea de código. Mientras tanto no se promete lo
+     * que no se sirve.
+     */
+    const categoryPagesLive = Deno.env.get("CATEGORY_PAGES_LIVE") === "true";
+
     const today = new Date().toISOString().split("T")[0];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
   <url><loc>${BASE_URL}/tools</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>${BASE_URL}/categories</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>${BASE_URL}/experts</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>${BASE_URL}/tutorials</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>${BASE_URL}/projects</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -120,9 +138,13 @@ Deno.serve(async (req: Request) => {
      */
     const MISCATEGORISED = new Set(["three-d"]);
 
-    for (const category of categories) {
-      if (MISCATEGORISED.has(category.slug)) continue;
-      xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+    if (categoryPagesLive) {
+      xml += `\n  <url><loc>${BASE_URL}/categories</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+
+      for (const category of categories) {
+        if (MISCATEGORISED.has(category.slug)) continue;
+        xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+      }
     }
 
     for (const tool of tools) {
