@@ -311,7 +311,7 @@ export default function ToolDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2 glass-card p-6">
           <h2 className="text-lg font-semibold text-white mb-3">About</h2>
-          <p className="text-surface-300 leading-relaxed whitespace-pre-line">{tool.description_long || tool.description}</p>
+          <p className="text-surface-300 leading-relaxed whitespace-pre-line">{tool.description}</p>
         </div>
 
         <div className="space-y-4">
