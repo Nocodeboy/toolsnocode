@@ -30,6 +30,7 @@ export default function ToolDetailPage() {
   const [experts, setExperts] = useState<Expert[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   const demoVideo = useMemo(
     () => (tool?.is_boosted && tool.video_url ? parseVideoUrl(tool.video_url) : null),
@@ -41,19 +42,20 @@ export default function ToolDetailPage() {
       if (!slug) return;
       setLoading(true);
 
-      const { data: toolData } = await supabase
+      const { data: toolData, error: toolError } = await supabase
         .from('tools')
         .select('*, category:categories(*)')
         .eq('slug', slug)
         .maybeSingle();
 
       if (!toolData) {
+        setNotFound(!toolError);
         setLoading(false);
         return;
       }
 
       setTool(toolData);
-      trackToolEvent('detail_view', toolData.id, toolData.is_boosted);
+      trackToolEvent('detail_view', toolData.id);
 
       const [altRes, tutRes, expertRes, projRes] = await Promise.all([
         supabase
@@ -138,7 +140,7 @@ export default function ToolDetailPage() {
     type: 'website',
     jsonLd,
     // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
-    noindex: !loading && !tool,
+    noindex: notFound,
   });
 
   if (loading) {
@@ -232,7 +234,7 @@ export default function ToolDetailPage() {
                   href={tool.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => trackToolEvent('outbound_click', tool.id, tool.is_boosted)}
+                  onClick={() => trackToolEvent('outbound_click', tool.id)}
                   className="btn-primary text-sm"
                 >
                   <Globe className="w-4 h-4" />

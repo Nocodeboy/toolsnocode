@@ -16,17 +16,21 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     async function load() {
       if (!slug) return;
       setLoading(true);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('slug', slug)
         .maybeSingle();
+
+      // Un 404 real es consulta correcta y cero filas; un error deja data en null igual.
+      if (!data && !error) setNotFound(true);
 
       if (data) {
         setProject(data);
@@ -80,7 +84,7 @@ export default function ProjectDetailPage() {
     type: 'article',
     jsonLd,
     // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
-    noindex: !loading && !project,
+    noindex: notFound,
   });
 
   if (loading) {

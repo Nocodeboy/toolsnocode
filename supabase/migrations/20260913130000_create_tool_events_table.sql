@@ -11,10 +11,21 @@
 
   El segundo es el entregable real del producto. El primero es su denominador.
 
-  Se inserta desde el cliente con la anon key, igual que `client_errors`, y por
-  el mismo motivo no hay policy de SELECT: los datos de una herramienta no son
-  públicos y se leen con service_role (dashboard, o el panel del maker cuando
-  exista, a través de una vista agregada).
+  ## Por qué NO hay policy de INSERT
+
+  La anon key es pública por diseño (viaja en el bundle del cliente), así que
+  una policy `WITH CHECK (true)` permitiría a cualquiera insertar eventos
+  fabricados para cualquier tool, con `is_boosted` falseado, y hacer crecer la
+  tabla sin límite. Unas métricas con las que se va a justificar un precio no
+  pueden ser escribibles por el mundo entero.
+
+  Los eventos entran solo por la edge function `track-event`, que usa la
+  service role key (y por tanto se salta RLS): allí se limita el ritmo por IP,
+  se comprueba que la tool existe y se deriva `is_boosted` del servidor en vez
+  de aceptarlo del cliente.
+
+  Tampoco hay policy de SELECT: los datos de una herramienta no son públicos y
+  se leen con service_role (dashboard, o el panel del maker cuando exista).
 */
 
 CREATE TABLE IF NOT EXISTS public.tool_events (
@@ -22,7 +33,6 @@ CREATE TABLE IF NOT EXISTS public.tool_events (
   tool_id uuid NOT NULL REFERENCES public.tools(id) ON DELETE CASCADE,
   event_type text NOT NULL CHECK (event_type IN ('detail_view', 'outbound_click')),
   is_boosted boolean NOT NULL DEFAULT false,
-  referrer text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -34,9 +44,5 @@ CREATE INDEX IF NOT EXISTS idx_tool_events_tool_type_created
 CREATE INDEX IF NOT EXISTS idx_tool_events_created_at
   ON public.tool_events (created_at DESC);
 
+-- RLS activo y sin ninguna policy: nadie escribe ni lee salvo service_role.
 ALTER TABLE public.tool_events ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can record tool events"
-  ON public.tool_events FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (true);

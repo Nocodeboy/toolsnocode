@@ -42,6 +42,7 @@ export default function TutorialDetailPage() {
   const [tool, setTool] = useState<Tool | null>(null);
   const [relatedTutorials, setRelatedTutorials] = useState<Tutorial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [videoActive, setVideoActive] = useState(false);
   const [embedFailed, setEmbedFailed] = useState(false);
 
@@ -50,11 +51,14 @@ export default function TutorialDetailPage() {
       if (!slug) return;
       setLoading(true);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tutorials')
         .select('*, tool:tools(*)')
         .eq('slug', slug)
         .maybeSingle();
+
+      // Un 404 real es consulta correcta y cero filas; un error deja data en null igual.
+      if (!data && !error) setNotFound(true);
 
       if (data) {
         setTutorial(data);
@@ -113,7 +117,7 @@ export default function TutorialDetailPage() {
     type: 'article',
     jsonLd,
     // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
-    noindex: !loading && !tutorial,
+    noindex: notFound,
   });
 
   if (loading) {

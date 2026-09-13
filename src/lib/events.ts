@@ -3,20 +3,19 @@ import { supabase } from './supabase';
 type ToolEventType = 'detail_view' | 'outbound_click';
 
 /**
- * Registra un evento de una herramienta. Dispara y olvida: la analítica nunca
- * debe romper la navegación ni retrasar un clic saliente, así que los fallos se
- * tragan en silencio (una promesa rechazada aquí no aporta nada al usuario).
+ * Registra un evento de una herramienta a través de la edge function
+ * `track-event`, no escribiendo en la tabla: la anon key es pública, así que un
+ * INSERT directo dejaría que cualquiera fabricase las métricas con las que se
+ * justifica el precio del Boost. La función limita el ritmo y deriva
+ * `is_boosted` del servidor.
+ *
+ * Dispara y olvida: la analítica nunca debe romper la navegación ni retrasar un
+ * clic saliente, así que los fallos se tragan en silencio.
  */
-export function trackToolEvent(eventType: ToolEventType, toolId: string, isBoosted = false): void {
+export function trackToolEvent(eventType: ToolEventType, toolId: string): void {
   if (!toolId) return;
 
-  void supabase
-    .from('tool_events')
-    .insert({
-      tool_id: toolId,
-      event_type: eventType,
-      is_boosted: isBoosted,
-      referrer: document.referrer ? document.referrer.slice(0, 500) : null,
-    })
+  void supabase.functions
+    .invoke('track-event', { body: { tool_id: toolId, event_type: eventType } })
     .then(undefined, () => {});
 }
