@@ -28,7 +28,7 @@ Faltan las dos y el build compila igual, pero la app revienta en el primer rende
 
 ### Migración desde Bolt.new — runbook
 
-El dominio `toolsnocode.com` estaba servido por Bolt. Orden recomendado para no romper pagos ni login:
+El dominio `toolsnocode.com` lo sirve Bolt.new, que despliega sobre Netlify (de ahí `public/_redirects`, en formato Netlify). Orden recomendado para no romper pagos ni login:
 
 1. **Vercel**: importar el repo, añadir las dos variables `VITE_*`, desplegar y comprobar el preview en `*.vercel.app`.
 2. **Supabase — orígenes permitidos**: añadir el dominio de Vercel a la allow-list mientras convivan los dos hosts:
@@ -38,7 +38,14 @@ El dominio `toolsnocode.com` estaba servido por Bolt. Orden recomendado para no 
    ```
    Sin esto el checkout responde `400 Invalid redirect URL` y CORS bloquea `verify-tool-dns` desde el dominio nuevo.
 3. **Supabase — Auth**: `Authentication → URL Configuration` → añadir la URL de Vercel a *Redirect URLs* (si no, el login con Google y la confirmación por email rebotan) y actualizar *Site URL* tras el corte.
-4. **DNS**: apuntar `toolsnocode.com` a Vercel (`A 76.76.21.21` para el apex o el `CNAME` que indique el dashboard) y añadir el dominio en Settings → Domains. Bajar el TTL unas horas antes reduce la ventana de propagación.
+4. **DNS**: se gestiona en **Hostinger** (los nameservers del dominio son `ns1.dns-parking.com` / `ns2.dns-parking.com`), no en Bolt ni en Netlify. Estado de partida y destino:
+
+   | Registro | Hoy | Tras la migración |
+   |----------|-----|-------------------|
+   | `toolsnocode.com` (A) | `75.2.60.5` (Netlify, donde despliega Bolt) | `76.76.21.21` (Vercel) |
+   | `www` (CNAME) | `site-dns.bolt.host` | `cname.vercel-dns.com` |
+
+   Añadir primero el dominio en Vercel (Settings → Domains) para que verifique, y confirmar en el dashboard los valores por si Vercel pide otros distintos. Bajar el TTL unas horas antes reduce la ventana de propagación.
 5. **Post-corte**: quitar el dominio de Bolt, devolver `ALLOWED_ORIGINS` a la lista mínima (`https://toolsnocode.com` + localhost) y redesplegar las funciones. `public/_redirects` puede borrarse; se mantiene de momento como vía de vuelta a Bolt/Netlify.
 6. **Verificar**: `/sitemap.xml` devuelve XML, una ruta profunda (`/tools/<slug>`) carga sin 404, login con Google, y un checkout de prueba en Stripe.
 
