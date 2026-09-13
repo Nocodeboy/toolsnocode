@@ -20,6 +20,44 @@ function readingTime(text: string): number {
   return Math.max(1, Math.ceil(words / 200));
 }
 
+/**
+ * Enlaces en línea estilo markdown dentro del contenido de una noticia.
+ *
+ * El boletín semanal menciona decenas de herramientas por entrega, y cada
+ * mención debe ser un enlace real: hoy solo ~24 fichas son alcanzables desde la
+ * home, así que este es el enlazado interno que le falta al directorio.
+ *
+ * Solo se aceptan rutas internas (`/...`) y `https://`. Cualquier otra cosa se
+ * queda como texto plano: el contenido de `news` lo escriben rutinas del
+ * servidor, pero un renderizador que acepte cualquier esquema es un
+ * `javascript:` esperando a que alguien se equivoque.
+ */
+const LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+function renderInline(text: string, keyPrefix: string) {
+  const parts: Array<string | JSX.Element> = [];
+  let last = 0;
+
+  for (const m of text.matchAll(LINK_RE)) {
+    const [full, label, href] = m;
+    const at = m.index ?? 0;
+    if (at > last) parts.push(text.slice(last, at));
+
+    if (href.startsWith('/')) {
+      parts.push(<Link key={`${keyPrefix}-${at}`} to={href} className="text-brand-400 hover:text-brand-300 underline underline-offset-2">{label}</Link>);
+    } else if (href.startsWith('https://')) {
+      parts.push(<a key={`${keyPrefix}-${at}`} href={href} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300 underline underline-offset-2">{label}</a>);
+    } else {
+      parts.push(full);
+    }
+
+    last = at + full.length;
+  }
+
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length > 0 ? parts : text;
+}
+
 function renderContent(content: string) {
   const paragraphs = content.split(/\n\n+/).filter(Boolean);
   return paragraphs.map((para, i) => {
@@ -34,7 +72,7 @@ function renderContent(content: string) {
       return (
         <ul key={i} className="list-disc list-inside space-y-1.5 my-4 text-surface-300">
           {items.map((item, j) => (
-            <li key={j} className="leading-relaxed">{item.replace(/^[-*] /, '')}</li>
+            <li key={j} className="leading-relaxed">{renderInline(item.replace(/^[-*] /, ''), `ul-${i}-${j}`)}</li>
           ))}
         </ul>
       );
@@ -44,14 +82,14 @@ function renderContent(content: string) {
       return (
         <ol key={i} className="list-decimal list-inside space-y-1.5 my-4 text-surface-300">
           {items.map((item, j) => (
-            <li key={j} className="leading-relaxed">{item.replace(/^\d+\. /, '')}</li>
+            <li key={j} className="leading-relaxed">{renderInline(item.replace(/^\d+\. /, ''), `ol-${i}-${j}`)}</li>
           ))}
         </ol>
       );
     }
     return (
       <p key={i} className="text-surface-300 leading-relaxed text-[15px] mb-4">
-        {para}
+        {renderInline(para, `p-${i}`)}
       </p>
     );
   });
@@ -314,24 +352,26 @@ export default function NewsDetailPage() {
           )}
         </article>
 
-        <div className="rounded-2xl bg-surface-900 border border-surface-700/50 p-6 mb-12">
-          <p className="text-xs text-surface-500 uppercase tracking-wider font-semibold mb-3">Original Source</p>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-surface-200 mb-1">{article.source}</p>
-              <p className="text-xs text-surface-500 break-all">{article.url}</p>
+        {article.url && (
+          <div className="rounded-2xl bg-surface-900 border border-surface-700/50 p-6 mb-12">
+            <p className="text-xs text-surface-500 uppercase tracking-wider font-semibold mb-3">Original Source</p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-surface-200 mb-1">{article.source}</p>
+                <p className="text-xs text-surface-500 break-all">{article.url}</p>
+              </div>
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary text-sm shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Read original
+              </a>
             </div>
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary text-sm shrink-0"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Read original
-            </a>
           </div>
-        </div>
+        )}
 
         {related.length > 0 && (
           <section aria-labelledby="related-heading">
