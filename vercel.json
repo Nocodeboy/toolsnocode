@@ -10,7 +10,7 @@
       "destination": "https://exlupbihqexeeyxwmveh.supabase.co/functions/v1/sitemap"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],
