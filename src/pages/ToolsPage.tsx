@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { SlidersHorizontal, X, Plus, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -6,9 +6,11 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Tool, Category } from '../types';
 import ToolCard from '../components/ui/ToolCard';
 import SearchBar from '../components/ui/SearchBar';
-import { useSEO } from '../hooks/useSEO';
+import { BASE_URL, useSEO } from '../hooks/useSEO';
 
 const PAGE_SIZE = 24;
+const TOOLS_DESCRIPTION =
+  'Browse and compare the best AI and no-code tools. Filter by category, pricing, and difficulty level to find your perfect stack.';
 const pricingOptions = ['all', 'free', 'freemium', 'paid', 'enterprise'] as const;
 // Se han retirado "Highest Rated" y "Most Upvoted": ambos ordenaban por datos
 // sembrados (60 tools con upvotes de ejemplo, 0 de 200 tools de makers con
@@ -32,23 +34,37 @@ export default function ToolsPage() {
   const pageRef = useRef(0);
   const { user } = useAuth();
 
-  useSEO({
-    title: 'AI & No-Code Tools',
-    description: 'Browse and compare the best AI and no-code tools. Filter by category, pricing, and difficulty level to find your perfect stack.',
-    url: '/tools',
-    jsonLd: {
-      '@context': 'https://schema.org',
-      '@type': 'CollectionPage',
-      name: 'AI & No-Code Tools',
-      url: 'https://toolsnocode.com/tools',
-      description: 'Browse and compare the best AI and no-code tools. Filter by category, pricing, and difficulty level to find your perfect stack.',
-    },
-  });
-
   const search = searchParams.get('q') || '';
   const categoryFilter = searchParams.get('category') || 'all';
   const pricingFilter = searchParams.get('pricing') || 'all';
   const sortBy = searchParams.get('sort') || 'newest';
+
+  // Cada combinación de filtros es una URL distinta con el mismo <title> y casi
+  // el mismo contenido. Cuando hay categoría, la versión canónica es su ficha en
+  // `/categories/:slug`, que además tiene texto propio; el resto de permutaciones
+  // canonicalizan a `/tools` en vez de competir entre ellas.
+  // Solo si el slug existe de verdad: un `?category=` inventado apuntaría la
+  // canónica a una ficha de categoría que devuelve 404.
+  const knownCategory = categories.some((c) => c.slug === categoryFilter);
+  const canonicalPath = knownCategory ? `/categories/${categoryFilter}` : '/tools';
+
+  const jsonLd = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'AI & No-Code Tools',
+      url: `${BASE_URL}/tools`,
+      description: TOOLS_DESCRIPTION,
+    }),
+    [],
+  );
+
+  useSEO({
+    title: 'AI & No-Code Tools',
+    description: TOOLS_DESCRIPTION,
+    url: canonicalPath,
+    jsonLd,
+  });
 
   useEffect(() => {
     supabase.from('categories').select('*').is('parent_id', null).order('sort_order').then(({ data }) => {

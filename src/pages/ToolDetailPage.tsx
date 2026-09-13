@@ -344,7 +344,7 @@ export default function ToolDetailPage() {
               {tool.category && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-surface-500 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> Category</span>
-                  <Link to={`/tools?category=${tool.category.slug}`} className="text-brand-400 hover:text-brand-300 transition-colors">
+                  <Link to={`/categories/${tool.category.slug}`} className="text-brand-400 hover:text-brand-300 transition-colors">
                     {tool.category.name}
                   </Link>
                 </div>

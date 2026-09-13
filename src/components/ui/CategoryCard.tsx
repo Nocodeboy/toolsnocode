@@ -71,7 +71,7 @@ export default memo(function CategoryCard({ category, toolCount }: CategoryCardP
 
   return (
     <Link
-      to={`/tools?category=${category.slug}`}
+      to={`/categories/${category.slug}`}
       className="glass-card-hover p-5 group block text-center"
     >
       <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">

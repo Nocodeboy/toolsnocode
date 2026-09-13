@@ -77,10 +77,11 @@ Deno.serve(async (req: Request) => {
      * Las páginas siguen existiendo y navegables; solo dejan de anunciarse.
      * Cuando tengan contenido real, se vuelven a añadir aquí.
      */
-    const [tools, projects, news] = await Promise.all([
+    const [tools, projects, news, categories] = await Promise.all([
       fetchAll("tools", "updated_at"),
       fetchAll("projects", "created_at"),
       fetchAll("news", "published_at"),
+      fetchAll("categories", "created_at"),
     ]);
 
     const today = new Date().toISOString().split("T")[0];
@@ -89,6 +90,7 @@ Deno.serve(async (req: Request) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
   <url><loc>${BASE_URL}/tools</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>${BASE_URL}/categories</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>${BASE_URL}/experts</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>${BASE_URL}/tutorials</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>${BASE_URL}/projects</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -97,6 +99,16 @@ Deno.serve(async (req: Request) => {
   <url><loc>${BASE_URL}/legal/privacy</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
   <url><loc>${BASE_URL}/legal/terms</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
   <url><loc>${BASE_URL}/legal/cookies</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`;
+
+    /**
+     * Las 33 fichas de categoría van con prioridad alta a propósito: son las
+     * únicas páginas del sitio que tienen texto editorial propio y, a la vez,
+     * enlazan al catálogo entero. Sin ellas el sitemap solo ofrecía la home y
+     * 3.075 fichas sueltas, sin nada en medio.
+     */
+    for (const category of categories) {
+      xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+    }
 
     for (const tool of tools) {
       const lastmod = tool.lastmod
