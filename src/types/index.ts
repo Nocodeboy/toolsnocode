@@ -25,6 +25,9 @@ export interface Tool {
   rating: number;
   review_count: number;
   upvotes: number;
+  views_30d: number;
+  clicks_30d: number;
+  trending_score: number;
   is_featured: boolean;
   is_trending: boolean;
   difficulty_level: 'beginner' | 'intermediate' | 'advanced';

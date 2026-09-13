@@ -39,7 +39,9 @@ export default function ProjectsPage() {
     let query = supabase
       .from('projects')
       .select('*, project_tools(tool:tools(*))', { count: 'exact' })
-      .order('upvotes', { ascending: false });
+      // Los upvotes de projects son del seed del 2026-03-08 (631, 524, 489...),
+      // así que ordenar por ellos congela la lista en los datos de muestra.
+      .order('created_at', { ascending: false });
 
     if (search) {
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,author_name.ilike.%${search}%`);

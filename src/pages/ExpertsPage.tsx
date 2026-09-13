@@ -39,7 +39,9 @@ export default function ExpertsPage() {
     let query = supabase
       .from('experts')
       .select('*', { count: 'exact' })
-      .order('rating', { ascending: false });
+      // Todos los expertos tienen rating 5.0 (viene del scraper), así que este
+      // orden era arbitrario disfrazado de mérito.
+      .order('created_at', { ascending: false });
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,bio.ilike.%${search}%,country.ilike.%${search}%`);

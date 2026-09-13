@@ -10,11 +10,12 @@ import { useSEO } from '../hooks/useSEO';
 
 const PAGE_SIZE = 24;
 const pricingOptions = ['all', 'free', 'freemium', 'paid', 'enterprise'] as const;
+// Se han retirado "Highest Rated" y "Most Upvoted": ambos ordenaban por datos
+// sembrados (60 tools con upvotes de ejemplo, 0 de 200 tools de makers con
+// rating), así que dejaban a toda herramienta real por detrás de las de muestra.
 const sortOptions = [
   { value: 'newest', label: 'Newest' },
-  { value: 'rating', label: 'Highest Rated' },
   { value: 'trending', label: 'Trending' },
-  { value: 'upvotes', label: 'Most Upvoted' },
   { value: 'boosted', label: 'Boosted' },
   { value: 'featured', label: "Editor's Picks" },
 ] as const;
@@ -74,15 +75,15 @@ export default function ToolsPage() {
     }
 
     if (sortBy === 'trending') {
-      query = query.eq('is_trending', true).order('is_boosted', { ascending: false }).order('upvotes', { ascending: false });
+      // El trending se gana, no se compra: aquí no se ancla lo boosteado arriba,
+      // o la sección dejaría de significar nada (y con ella el propio Boost).
+      // Mientras `tool_events` acumula datos todos los scores son 0 y el orden
+      // degrada solo a "más recientes", que es lo honesto sin datos.
+      query = query.order('trending_score', { ascending: false }).order('created_at', { ascending: false });
     } else if (sortBy === 'boosted') {
       query = query.eq('is_boosted', true).order('boost_expires_at', { ascending: false });
     } else if (sortBy === 'featured') {
       query = query.eq('is_featured', true).eq('is_boosted', false).order('created_at', { ascending: false });
-    } else if (sortBy === 'rating') {
-      query = query.order('is_boosted', { ascending: false }).order('rating', { ascending: false });
-    } else if (sortBy === 'upvotes') {
-      query = query.order('is_boosted', { ascending: false }).order('upvotes', { ascending: false });
     } else {
       query = query.order('is_boosted', { ascending: false }).order('created_at', { ascending: false });
     }
