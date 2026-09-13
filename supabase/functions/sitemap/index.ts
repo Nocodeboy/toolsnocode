@@ -29,29 +29,48 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const [toolsRes, expertsRes, tutorialsRes, projectsRes, newsRes] =
-      await Promise.all([
-        supabase
-          .from("tools")
-          .select("slug, updated_at")
-          .order("updated_at", { ascending: false }),
-        supabase
-          .from("experts")
-          .select("slug, updated_at")
-          .order("updated_at", { ascending: false }),
-        supabase
-          .from("tutorials")
-          .select("slug, updated_at")
-          .order("updated_at", { ascending: false }),
-        supabase
-          .from("projects")
-          .select("slug, updated_at")
-          .order("updated_at", { ascending: false }),
-        supabase
-          .from("news")
-          .select("slug, published_at")
-          .order("published_at", { ascending: false }),
-      ]);
+    /**
+     * Dos motivos por los que el sitemap publicaba 1.030 URLs de 15.157:
+     *
+     *  1. PostgREST corta la respuesta en 1.000 filas, así que un único select
+     *     truncaba el catálogo de tools sin avisar. De ahí la paginación.
+     *  2. Se pedía `updated_at` a experts, tutorials y projects, y esa columna
+     *     solo existe en `tools`. PostgREST devolvía 400, el código leía
+     *     `.data ?? []` sin mirar `.error`, y esas tres secciones desaparecían
+     *     en silencio. De ahí el `throw` y el uso de `created_at`.
+     */
+    async function fetchAll(table: string, dateColumn: string) {
+      const PAGE = 1000;
+      const rows: Array<{ slug: string; lastmod: string | null }> = [];
+
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from(table)
+          .select(`slug, ${dateColumn}`)
+          .order(dateColumn, { ascending: false })
+          .order("slug", { ascending: true })
+          .range(from, from + PAGE - 1);
+
+        if (error) throw new Error(`sitemap: ${table}.${dateColumn} -> ${error.message}`);
+        if (!data || data.length === 0) break;
+
+        for (const row of data as unknown as Record<string, string | null>[]) {
+          if (row.slug) rows.push({ slug: row.slug, lastmod: row[dateColumn] ?? null });
+        }
+
+        if (data.length < PAGE) break;
+      }
+
+      return rows;
+    }
+
+    const [tools, experts, tutorials, projects, news] = await Promise.all([
+      fetchAll("tools", "updated_at"),
+      fetchAll("experts", "created_at"),
+      fetchAll("tutorials", "created_at"),
+      fetchAll("projects", "created_at"),
+      fetchAll("news", "published_at"),
+    ]);
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -68,37 +87,37 @@ Deno.serve(async (req: Request) => {
   <url><loc>${BASE_URL}/legal/terms</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
   <url><loc>${BASE_URL}/legal/cookies</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`;
 
-    for (const tool of toolsRes.data ?? []) {
-      const lastmod = tool.updated_at
-        ? tool.updated_at.split("T")[0]
+    for (const tool of tools) {
+      const lastmod = tool.lastmod
+        ? tool.lastmod.split("T")[0]
         : today;
       xml += `\n  <url><loc>${BASE_URL}/tools/${xmlEscape(tool.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
     }
 
-    for (const expert of expertsRes.data ?? []) {
-      const lastmod = expert.updated_at
-        ? expert.updated_at.split("T")[0]
+    for (const expert of experts) {
+      const lastmod = expert.lastmod
+        ? expert.lastmod.split("T")[0]
         : today;
       xml += `\n  <url><loc>${BASE_URL}/experts/${xmlEscape(expert.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
     }
 
-    for (const tutorial of tutorialsRes.data ?? []) {
-      const lastmod = tutorial.updated_at
-        ? tutorial.updated_at.split("T")[0]
+    for (const tutorial of tutorials) {
+      const lastmod = tutorial.lastmod
+        ? tutorial.lastmod.split("T")[0]
         : today;
       xml += `\n  <url><loc>${BASE_URL}/tutorials/${xmlEscape(tutorial.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
     }
 
-    for (const project of projectsRes.data ?? []) {
-      const lastmod = project.updated_at
-        ? project.updated_at.split("T")[0]
+    for (const project of projects) {
+      const lastmod = project.lastmod
+        ? project.lastmod.split("T")[0]
         : today;
       xml += `\n  <url><loc>${BASE_URL}/projects/${xmlEscape(project.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`;
     }
 
-    for (const article of newsRes.data ?? []) {
-      const lastmod = article.published_at
-        ? article.published_at.split("T")[0]
+    for (const article of news) {
+      const lastmod = article.lastmod
+        ? article.lastmod.split("T")[0]
         : today;
       xml += `\n  <url><loc>${BASE_URL}/news/${xmlEscape(article.slug)}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`;
     }
@@ -112,7 +131,10 @@ Deno.serve(async (req: Request) => {
         "Cache-Control": "public, max-age=3600, s-maxage=3600",
       },
     });
-  } catch {
+  } catch (err) {
+    // Sin este log, un fallo de consulta era indistinguible de un catálogo vacío:
+    // así fue como desaparecieron 12.000 URLs sin que nadie se enterara.
+    console.error("sitemap generation failed:", err);
     return new Response(
       `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`,
       {

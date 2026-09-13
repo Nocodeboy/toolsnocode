@@ -112,6 +112,8 @@ export default function TutorialDetailPage() {
     url: tutorial ? `/tutorials/${tutorial.slug}` : undefined,
     type: 'article',
     jsonLd,
+    // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
+    noindex: !loading && !tutorial,
   });
 
   if (loading) {

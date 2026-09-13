@@ -84,6 +84,8 @@ export default function ExpertDetailPage() {
     url: expert ? `/experts/${expert.slug}` : undefined,
     type: 'profile',
     jsonLd,
+    // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
+    noindex: !loading && !expert,
   });
 
   if (loading) {

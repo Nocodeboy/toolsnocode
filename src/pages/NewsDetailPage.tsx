@@ -152,6 +152,8 @@ export default function NewsDetailPage() {
     url: `/news/${slug}`,
     type: 'article',
     jsonLd: jsonLd,
+    // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
+    noindex: !loading && !article,
   });
 
   async function copyLink() {

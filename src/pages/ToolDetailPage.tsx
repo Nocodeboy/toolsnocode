@@ -5,6 +5,7 @@ import {
   Tag, BarChart3, Clock, BookOpen, Users, Rocket, Pencil, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { trackToolEvent } from '../lib/events';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
 import FavoriteButton from '../components/ui/FavoriteButton';
@@ -52,6 +53,7 @@ export default function ToolDetailPage() {
       }
 
       setTool(toolData);
+      trackToolEvent('detail_view', toolData.id, toolData.is_boosted);
 
       const [altRes, tutRes, expertRes, projRes] = await Promise.all([
         supabase
@@ -135,6 +137,8 @@ export default function ToolDetailPage() {
     url: tool ? `/tools/${tool.slug}` : undefined,
     type: 'website',
     jsonLd,
+    // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
+    noindex: !loading && !tool,
   });
 
   if (loading) {
@@ -224,7 +228,13 @@ export default function ToolDetailPage() {
 
             <div className="flex flex-wrap items-center gap-3 mb-3">
               {tool.website && (
-                <a href={tool.website} target="_blank" rel="noopener noreferrer" className="btn-primary text-sm">
+                <a
+                  href={tool.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackToolEvent('outbound_click', tool.id, tool.is_boosted)}
+                  className="btn-primary text-sm"
+                >
                   <Globe className="w-4 h-4" />
                   Visit Website
                   <ExternalLink className="w-3.5 h-3.5" />
