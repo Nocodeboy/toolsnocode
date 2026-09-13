@@ -58,12 +58,17 @@ export default function ToolDetailPage() {
       trackToolEvent('detail_view', toolData.id);
 
       const [altRes, tutRes, expertRes, projRes] = await Promise.all([
+        // "alternativas a X" es de las búsquedas con más intención de compra del
+        // sector, y sale entera de datos propios. Se ordena por comportamiento
+        // real y luego por novedad, no por el orden en que entraron en la tabla.
         supabase
           .from('tools')
           .select('*')
           .eq('category_id', toolData.category_id)
           .neq('id', toolData.id)
-          .limit(4),
+          .order('trending_score', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(8),
         supabase.from('tutorials').select('*').eq('tool_id', toolData.id).limit(4),
         supabase
           .from('expert_tools')
@@ -127,13 +132,31 @@ export default function ToolDetailPage() {
     ];
   }, [tool]);
 
+  // Se declara aparte de `jsonLd` porque depende de `alternatives`, que llega en
+  // una segunda consulta: mezclarlo arriba reharía el bloque entero en cada carga.
+  const alternativesLd = useMemo(() => {
+    if (!tool || alternatives.length === 0) return undefined;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `${tool.name} alternatives`,
+      numberOfItems: alternatives.length,
+      itemListElement: alternatives.map((alt, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: alt.name,
+        url: `https://toolsnocode.com/tools/${alt.slug}`,
+      })),
+    };
+  }, [tool, alternatives]);
+
   useSEO({
     title: tool ? `${tool.name} - ${tool.tagline}` : undefined,
     description: tool ? tool.description?.slice(0, 160) || tool.tagline : undefined,
     image: tool?.logo_url || tool?.screenshot_urls?.[0],
     url: tool ? `/tools/${tool.slug}` : undefined,
     type: 'website',
-    jsonLd,
+    jsonLd: alternativesLd && jsonLd ? [...(Array.isArray(jsonLd) ? jsonLd : [jsonLd]), alternativesLd] : jsonLd,
     // Un slug inexistente devuelve 200 con la shell del SPA: sin esto sería un soft-404.
     noindex: notFound,
   });
@@ -415,7 +438,10 @@ export default function ToolDetailPage() {
 
       {alternatives.length > 0 && (
         <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Alternatives</h2>
+          <h2 className="text-lg font-semibold text-white mb-1">{tool.name} alternatives</h2>
+          <p className="text-sm text-surface-400 mb-4">
+            Other {tool.category?.name ?? 'AI &amp; no-code'} tools people compare with {tool.name}.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {alternatives.map((alt) => (
               <Link key={alt.id} to={`/tools/${alt.slug}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/50 hover:bg-surface-800 border border-surface-700/30 transition-colors">
