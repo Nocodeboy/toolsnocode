@@ -77,11 +77,31 @@ Deno.serve(async (req: Request) => {
      * Las páginas siguen existiendo y navegables; solo dejan de anunciarse.
      * Cuando tengan contenido real, se vuelven a añadir aquí.
      */
-    const [tools, projects, news] = await Promise.all([
+    const [tools, projects, news, categories] = await Promise.all([
       fetchAll("tools", "updated_at"),
       fetchAll("projects", "created_at"),
       fetchAll("news", "published_at"),
+      fetchAll("categories", "created_at"),
     ]);
+
+    /**
+     * Las páginas de categoría son frontend, y esta función no lo es.
+     *
+     * Desplegar esta función alcanza producción al instante; la ruta
+     * `/categories/:slug` viaja en la build de Vercel y llega cuando se fusiona
+     * su rama. Entre un momento y el otro el sitemap anuncia 33 URLs que el SPA
+     * resuelve con su página 404 — soft 404s, justo lo que acabamos de sacar
+     * del índice.
+     *
+     * Así que el anuncio va detrás de un interruptor explícito. Cuando la build
+     * con `/categories` esté en producción:
+     *
+     *     supabase secrets set CATEGORY_PAGES_LIVE=true
+     *
+     * y aparecen sin tocar una línea de código. Mientras tanto no se promete lo
+     * que no se sirve.
+     */
+    const categoryPagesLive = Deno.env.get("CATEGORY_PAGES_LIVE") === "true";
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -97,6 +117,26 @@ Deno.serve(async (req: Request) => {
   <url><loc>${BASE_URL}/legal/privacy</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
   <url><loc>${BASE_URL}/legal/terms</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
   <url><loc>${BASE_URL}/legal/cookies</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`;
+
+    /**
+     * Las fichas de categoría van con prioridad alta a propósito: son las
+     * únicas páginas del sitio que tienen texto editorial propio y, a la vez,
+     * enlazan al catálogo entero. Sin ellas el sitemap solo ofrecía la home y
+     * 3.075 fichas sueltas, sin nada en medio.
+     *
+     * `three-d` estuvo fuera de esta lista mientras 32 de sus 54 filas eran
+     * estudios de tatuaje y plataformas de telemedicina bajo un texto sobre
+     * topología de malla. Recategorizadas, la página describe lo que enseña y
+     * vuelve a anunciarse.
+     */
+
+    if (categoryPagesLive) {
+      xml += `\n  <url><loc>${BASE_URL}/categories</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+
+      for (const category of categories) {
+        xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+      }
+    }
 
     for (const tool of tools) {
       const lastmod = tool.lastmod

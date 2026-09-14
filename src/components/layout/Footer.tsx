@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Zap, Github, Twitter } from 'lucide-react';
 
+// `ai` y `growth` no son slugs de ninguna categoría. `ToolsPage` resuelve el
+// parámetro contra la tabla y, al no encontrar nada, no aplicaba ningún filtro:
+// cinco enlaces del pie llevaban al listado completo haciéndose pasar por una
+// selección. Ahora apuntan a las fichas de categoría, que sí existen.
 const footerLinks = {
   Discover: [
-    { label: 'AI Tools', href: '/tools?category=ai' },
-    { label: 'No-Code Tools', href: '/tools?category=no-code' },
-    { label: 'Growth Tools', href: '/tools?category=growth' },
+    { label: 'All Categories', href: '/categories' },
+    { label: 'Marketing Tools', href: '/categories/marketing' },
+    { label: 'Automation Tools', href: '/categories/automation' },
     { label: 'Trending', href: '/tools?sort=trending' },
   ],
   Community: [
@@ -15,9 +19,9 @@ const footerLinks = {
     { label: 'Submit a Tool', href: '/tools/new' },
   ],
   Resources: [
-    { label: 'Best AI Tools', href: '/tools?category=ai' },
-    { label: 'Best No-Code Tools', href: '/tools?category=no-code' },
-    { label: 'Tutorials', href: '/tutorials' },
+    { label: 'No-Code Tools', href: '/categories/no-code' },
+    { label: 'AI Coding Tools', href: '/categories/coding' },
+    { label: 'AI Image Generators', href: '/categories/image-generation' },
     { label: 'News', href: '/news' },
     { label: 'Boost Your Tool', href: '/pricing' },
   ],

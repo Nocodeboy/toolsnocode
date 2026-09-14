@@ -8,6 +8,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy-loaded pages for code-splitting
 const ToolsPage = lazy(() => import('./pages/ToolsPage'));
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const ToolDetailPage = lazy(() => import('./pages/ToolDetailPage'));
 const ToolFormPage = lazy(() => import('./pages/ToolFormPage'));
 const ExpertsPage = lazy(() => import('./pages/ExpertsPage'));
@@ -64,6 +66,8 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="categories" element={<CategoriesPage />} />
+                <Route path="categories/:slug" element={<CategoryPage />} />
                 <Route path="tools" element={<ToolsPage />} />
                 <Route path="tools/new" element={<ToolFormPage />} />
                 <Route path="tools/:slug/edit" element={<ToolFormPage />} />
