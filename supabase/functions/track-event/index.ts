@@ -8,6 +8,24 @@ function getCorsHeaders(req: Request) {
 }
 
 const EVENT_TYPES = new Set(["detail_view", "outbound_click"]);
+
+/**
+ * Los crawlers ejecutan JavaScript. Googlebot abrió 1.226 fichas distintas en
+ * tres días, una por hora, día y noche, y de ahí salieron 1.750 "vistas" y 6
+ * clics — un 0,3 % de conversión, que es la firma de una máquina recorriendo
+ * un sitemap. Sin este filtro el `trending_score` mide el ritmo de indexación
+ * de Google y las analíticas del maker le enseñan bots.
+ *
+ * Se responde 204 igualmente: el navegador no tiene por qué saber que el
+ * evento no se guardó, y un bot tampoco.
+ */
+const CRAWLER_UA =
+  /bot|crawl|spider|slurp|facebookexternalhit|embedly|quora link preview|pinterest|headlesschrome|phantomjs|lighthouse|pagespeed|gtmetrix|prerender|python-requests|curl\/|wget\/|go-http-client|okhttp|java\/|libwww|httpclient|scrapy/i;
+
+function looksLikeCrawler(ua: string | null): boolean {
+  if (!ua || ua.length < 20) return true; // sin UA, o uno de juguete: no es un navegador
+  return CRAWLER_UA.test(ua);
+}
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -59,6 +77,10 @@ Deno.serve(async (req: Request) => {
         status: 429,
         headers: { ...cors, "Content-Type": "application/json" },
       });
+    }
+
+    if (looksLikeCrawler(req.headers.get("user-agent"))) {
+      return new Response(null, { status: 204, headers: cors });
     }
 
     const { tool_id, event_type } = await req.json().catch(() => ({}));

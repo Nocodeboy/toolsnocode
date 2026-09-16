@@ -7,6 +7,7 @@ import type { Project, Tool } from '../types';
 import ProjectCard from '../components/ui/ProjectCard';
 import SearchBar from '../components/ui/SearchBar';
 import { useSEO } from '../hooks/useSEO';
+import { ilikeAny } from '../lib/search';
 
 const PAGE_SIZE = 24;
 
@@ -44,7 +45,7 @@ export default function ProjectsPage() {
       .order('created_at', { ascending: false });
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,author_name.ilike.%${search}%`);
+      query = query.or(ilikeAny(['title', 'description', 'author_name'], search));
     }
 
     return query.range(from, to);

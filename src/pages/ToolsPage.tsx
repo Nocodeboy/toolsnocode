@@ -7,6 +7,7 @@ import type { Tool, Category } from '../types';
 import ToolCard from '../components/ui/ToolCard';
 import SearchBar from '../components/ui/SearchBar';
 import { BASE_URL, useSEO } from '../hooks/useSEO';
+import { ilikeAny } from '../lib/search';
 
 const PAGE_SIZE = 24;
 const TOOLS_DESCRIPTION =
@@ -87,7 +88,7 @@ export default function ToolsPage() {
     }
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,tagline.ilike.%${search}%`);
+      query = query.or(ilikeAny(['name', 'tagline'], search));
     }
 
     if (sortBy === 'trending') {

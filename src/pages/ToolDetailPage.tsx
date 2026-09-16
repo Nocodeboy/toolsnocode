@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, ExternalLink, TrendingUp, Globe,
   Tag, BarChart3, Clock, BookOpen, Users, Rocket, Pencil, ShieldCheck,
+  Eye, MousePointerClick,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { trackToolEvent } from '../lib/events';
@@ -280,6 +281,8 @@ export default function ToolDetailPage() {
               />
             )}
 
+            {user?.id === tool.user_id && <OwnerStats tool={tool} />}
+
             {user?.id === tool.user_id && !tool.is_boosted && (
               <Link
                 to={`/pricing?tool=${tool.id}`}
@@ -460,6 +463,57 @@ export default function ToolDetailPage() {
             ))}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Lo que ve el dueño y nadie más: cuánta gente abre su ficha y cuánta sigue
+ * hasta su web, en los últimos 30 días. Son los mismos contadores que mueven el
+ * `trending_score`, así que el maker ve exactamente lo que el sitio usa para
+ * ordenarlo — no una métrica de escaparate distinta de la real.
+ *
+ * Los números son pequeños a propósito: se cuentan personas, no crawlers
+ * (`track-event` los descarta por User-Agent), y la serie empieza el día que
+ * se activó el filtro. Un cero honesto vale más que un mil inflado.
+ */
+function OwnerStats({ tool }: { tool: Tool }) {
+  const views = tool.views_30d ?? 0;
+  const clicks = tool.clicks_30d ?? 0;
+  const ctr = views > 0 ? Math.round((clicks / views) * 100) : null;
+  const expires = tool.boost_expires_at
+    ? new Date(tool.boost_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  return (
+    <div className="mt-3 p-4 rounded-xl bg-surface-900/60 border border-surface-800">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-surface-500">Your last 30 days</p>
+        {tool.trending_score > 0 && (
+          <span className="badge bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <TrendingUp className="w-3 h-3 mr-1" /> Trending
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div>
+          <p className="text-xl font-semibold text-white tabular-nums">{views}</p>
+          <p className="text-[11px] text-surface-500 flex items-center justify-center gap-1"><Eye className="w-3 h-3" /> page views</p>
+        </div>
+        <div>
+          <p className="text-xl font-semibold text-white tabular-nums">{clicks}</p>
+          <p className="text-[11px] text-surface-500 flex items-center justify-center gap-1"><MousePointerClick className="w-3 h-3" /> visits to your site</p>
+        </div>
+        <div>
+          <p className="text-xl font-semibold text-white tabular-nums">{ctr === null ? '—' : `${ctr}%`}</p>
+          <p className="text-[11px] text-surface-500">click-through</p>
+        </div>
+      </div>
+      {tool.is_boosted && expires && (
+        <p className="mt-3 pt-3 border-t border-surface-800 text-xs text-violet-300 flex items-center gap-1.5">
+          <Rocket className="w-3.5 h-3.5" /> Boosted until {expires}
+        </p>
       )}
     </div>
   );
