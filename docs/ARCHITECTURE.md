@@ -97,4 +97,4 @@ Un usuario puede reclamar ser dueño de una tool demostrando control sobre su do
 
 ## SEO
 
-`useSEO` (`src/hooks/useSEO.ts`) escribe directamente en `document.head`: `<title>`, meta description, canonical (siempre la propia ruta, nunca la home), OpenGraph, Twitter y JSON-LD por página. Las páginas de categoría (`/categories/:slug`) llevan copy editorial propio en `src/data/categoryCopy.ts` y `CollectionPage` + `ItemList` + `BreadcrumbList`.
+Dos capas. En el edge de Vercel, `api/page.ts` escribe el `<head>` correcto de cada ficha, noticia y categoría **antes** de servir el HTML, y pone un `<h1>` y los primeros párrafos en `#root` para crawlers sin JavaScript; `api/og.tsx` genera la imagen social por ruta. En el cliente, `useSEO` (`src/hooks/useSEO.ts`) escribe directamente en `document.head`: `<title>`, meta description, canonical (siempre la propia ruta, nunca la home), OpenGraph, Twitter y JSON-LD por página. Las páginas de categoría (`/categories/:slug`) llevan copy editorial propio en `src/data/categoryCopy.ts` y `CollectionPage` + `ItemList` + `BreadcrumbList`.
