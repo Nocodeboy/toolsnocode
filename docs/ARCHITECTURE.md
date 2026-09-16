@@ -17,9 +17,8 @@ Toolsnocode es una SPA (Vite + React Router) que habla directamente con Supabase
 │   (Deno)     │
 └──────┬───────┘
        │
-       ├─▶ Stripe API (checkout/webhooks)
-       ├─▶ OpenAI API (rewrite de noticias)
-       └─▶ DNS / feeds RSS externos
+       ├─▶ Stripe API (checkout / webhooks / portal)
+       └─▶ DNS (verificación de dominio)
 ```
 
 ## Rutas del frontend
@@ -30,6 +29,7 @@ Definidas en `src/App.tsx`. Todas las rutas autenticadas usan `ProtectedRoute`.
 |------|--------|------|
 | `/` | HomePage | pública |
 | `/tools`, `/tools/:slug` | ToolsPage, ToolDetailPage | pública |
+| `/categories`, `/categories/:slug` | CategoriesPage, CategoryPage | pública — copy editorial en `src/data/categoryCopy.ts` |
 | `/tools/new`, `/tools/:slug/edit` | ToolFormPage | pública (creación libre; edición requiere owner) |
 | `/experts`, `/tutorials`, `/projects`, `/news` | listados + detalle | públicas |
 | `/account` | AccountPage | **requiere login** |
@@ -57,24 +57,26 @@ Dos Edge Functions y tres tablas (`stripe_customers`, `stripe_subscriptions`, `s
 3. Crea una Checkout Session y devuelve la URL al frontend, que redirige al usuario.
 4. Tras el pago Stripe redirige a `/success`.
 
-**Flujo de webhook** (`supabase/functions/stripe-webhook/index.ts`):
-- Verifica la firma con `STRIPE_WEBHOOK_SECRET`.
-- Maneja `checkout.session.completed`, `customer.subscription.*` y `invoice.*`.
-- Persiste subscripciones activas en `stripe_subscriptions` y pedidos one-off en `stripe_orders`.
-- El frontend lee estado de suscripción desde `stripe_subscriptions` (con RLS por `user_id`).
+**Flujo de webhook** (`supabase/functions/stripe-webhook/index.ts`, lógica en `_shared/boost-sync.ts`):
+- Verifica la firma con `STRIPE_WEBHOOK_SECRET` y deduplica por `event_id` en `stripe_webhook_events`.
+- Maneja `checkout.session.completed`, `customer.subscription.updated|deleted` e `invoice.payment_failed`.
+- Resuelve al usuario por `stripe_customers`; si no hay fila (pago fuera del checkout de la app), por el email del cliente en Stripe vía `user_id_by_email()`, y escribe la fila que faltaba.
+- Aplica el Boost a la herramienta de `subscription.metadata.tool_id`; sin `tool_id`, a la única herramienta del usuario si solo tiene una. `past_due` no lo retira (Stripe reintenta durante semanas); `unpaid`, `canceled` e `incomplete_expired` sí.
+- Todo lo que no puede entregar queda en `stripe_incidents` con motivo y email. Nunca en un `console.error`.
+- `stripe-resync` reprocesa a un cliente con esta misma lógica sin necesitar un evento firmado.
+- El frontend lee el estado desde la vista `stripe_user_subscriptions` (filtrada por `auth.uid()`); la pestaña Billing de `/account` abre el portal de Stripe vía `stripe-portal`.
 
-Los ítems "boosted" en `tools` (`is_boosted = true`) son los que tienen suscripción Stripe activa. Un trigger fuerza que `video_url` solo se guarde si `is_boosted` es verdadero (ver [DATABASE.md](./DATABASE.md)).
+Los ítems "boosted" en `tools` (`is_boosted = true`) son los que tienen suscripción activa. Un trigger impide **cambiar** `video_url` sin Boost, pero no borra el que ya estaba: una renovación fallida no destruye el vídeo del cliente. La caducidad la barre `expire-stale-boosts` a diario (ver [DATABASE.md](./DATABASE.md)).
 
-## Pipeline de noticias
+## Boletín semanal (`/news`)
 
-Dos Edge Functions disparadas por `pg_cron`:
+No hay fuentes externas ni APIs de IA. El directorio tiene el único dato que nadie más tiene — un año de altas, categorías reales y, desde septiembre de 2026, visitas y clics reales — y la edición semanal es donde ese dato se convierte en una observación.
 
-1. **`fetch-and-rewrite-news`** (`supabase/functions/fetch-and-rewrite-news/index.ts`)
-   - Recorre ~6 feeds RSS (TechCrunch, Verge, Ars Technica, VentureBeat, O'Reilly, Wired).
-   - Para cada nuevo ítem: llama a OpenAI para reescribir título + cuerpo, genera slug, guarda en `news`.
-2. **`enrich-news`** — pasadas adicionales de enriquecimiento sobre filas ya creadas.
+1. **`weekly_digest_brief()`** (SQL) reúne los hechos de la semana en un JSON: altas con marca `presentable`, reparto por categoría junto a la cuota de esa categoría en todo el directorio, altas mensuales, precios, lo más visto si algo supera 10 visitas, ediciones anteriores.
+2. **Una rutina de Claude Code** abre una sesión cada lunes a las 08:00 UTC, pide el brief a la Edge Function `digest`, escribe la edición desde cero siguiendo [NEWSLETTER.md](./NEWSLETTER.md), comprueba cada cifra contra el JSON y la publica.
+3. **`digest` (POST)** valida antes de insertar: resuelve cada enlace interno `/tools/`, `/categories/`, `/news/` contra la base y rechaza la edición si alguno no existe; exige al menos cuatro enlaces a herramientas; rechaza slugs repetidos.
 
-**Cron jobs**: definidos en migraciones `20260322111813_create_daily_news_cron_job.sql` y `20260322111823_update_daily_news_cron_use_pgnet.sql`. Usan la extensión `pg_net` para invocar la edge function vía HTTPS.
+`NewsDetailPage` renderiza el contenido en Markdown restringido (`##`, listas, enlaces inline a rutas internas o `https://`).
 
 ## Verificación de tools (claim ownership)
 
@@ -87,7 +89,7 @@ Un usuario puede reclamar ser dueño de una tool demostrando control sobre su do
 
 ## Sitemap
 
-`supabase/functions/sitemap/index.ts` genera un sitemap XML dinámico con todas las tools, experts, tutorials, projects y news publicadas. Cacheable por CDN.
+`supabase/functions/sitemap/index.ts` genera un sitemap XML dinámico paginando PostgREST (que corta en 1.000 filas por consulta): tools, projects, news y — con `CATEGORY_PAGES_LIVE=true` — las 33 páginas de categoría. `experts` y `tutorials` no se anuncian a propósito: ~12.000 fichas sin contenido propio arrastrarían al resto del dominio. Ante un fallo devuelve 500, nunca un `<urlset>` vacío.
 
 ## Storage
 
@@ -95,4 +97,4 @@ Un usuario puede reclamar ser dueño de una tool demostrando control sobre su do
 
 ## SEO
 
-`useSEO` (`src/hooks/useSEO.ts`) envuelve `react-helmet-async` para inyectar `<title>`, meta description, canonical y OpenGraph por página. La home incorpora JSON-LD de estructura.
+`useSEO` (`src/hooks/useSEO.ts`) escribe directamente en `document.head`: `<title>`, meta description, canonical (siempre la propia ruta, nunca la home), OpenGraph, Twitter y JSON-LD por página. Las páginas de categoría (`/categories/:slug`) llevan copy editorial propio en `src/data/categoryCopy.ts` y `CollectionPage` + `ItemList` + `BreadcrumbList`.

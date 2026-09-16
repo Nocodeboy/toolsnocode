@@ -7,7 +7,7 @@ Postgres gestionado por Supabase. Todas las tablas de `public.` tienen RLS activ
 | Tabla | Filas aprox. | Descripción |
 |-------|-------------:|-------------|
 | `categories` | 33 | Categorías de tools (árbol plano por ahora). |
-| `tools` | 2 779 | Herramientas no-code. Entidad principal. |
+| `tools` | 3 094 | Herramientas no-code. Entidad principal. Lleva `views_30d`, `clicks_30d`, `trending_score` (recalculados cada hora desde `tool_events`) y el estado de Boost. |
 | `experts` | 4 306 | Profesionales / consultores. |
 | `expert_tools` | 6 733 | Unión many-to-many experts ↔ tools. |
 | `tutorials` | 7 680 | Tutoriales enlazados a tools/categorías. |
@@ -18,11 +18,14 @@ Postgres gestionado por Supabase. Todas las tablas de `public.` tienen RLS activ
 | `claims` | 2 | Reclamaciones de propiedad resueltas. |
 | `claim_requests` | 1 | Peticiones pendientes (fallback manual). |
 | `tool_verifications` | 0 | Tokens DNS TXT activos para verificación. |
-| `news` | 20 | Noticias reescritas por el pipeline. |
-| `stripe_customers` | 1 | Map `user_id` ↔ `stripe_customer_id`. |
-| `stripe_subscriptions` | 2 | Estado de suscripción por usuario. |
+| `news` | — | Ediciones del boletín semanal (`source = 'ToolsNoCode'`) y restos del pipeline anterior. Ver [NEWSLETTER.md](./NEWSLETTER.md). |
+| `stripe_customers` | 3 | Map `user_id` ↔ `stripe_customer_id`. La escribe el checkout de la app, y el webhook cuando resuelve un cliente por email. |
+| `stripe_subscriptions` | 6 | Estado de suscripción por cliente (`customer_id` UNIQUE: un Boost por maker). |
 | `stripe_orders` | 0 | Pagos one-off. |
-| `stripe_webhook_events` | 0 | Idempotencia de webhooks Stripe (PK = `event_id`). |
+| `stripe_webhook_events` | 19 | Idempotencia de webhooks Stripe (PK = `event_id`). |
+| `stripe_incidents` | 1 | Boosts que el webhook no pudo entregar, con motivo y email. Abiertas = `resolved_at IS NULL`. Solo service_role. |
+| `tool_events` | ~1 800 | `detail_view` / `outbound_click` por tool. Solo inserta `track-event` (service_role); RLS sin políticas. Los crawlers se descartan en la función. |
+| `tools_category_backup_20260913` | 54 | Asignación de categoría previa a la recategorización de `three-d`. Solo consulta. |
 | `client_errors` | 0 | Errores capturados por el `ErrorBoundary` de React. INSERT abierto; SELECT solo service_role. |
 
 ## Convenciones de migraciones
@@ -46,11 +49,29 @@ Postgres gestionado por Supabase. Todas las tablas de `public.` tienen RLS activ
 
 Archivo: `20260409165012_enforce_video_url_requires_boost.sql`, endurecido en `20260414122202_fix_security_advisor_warnings.sql` (revertido brevemente por `20260414183522_revert_security_advisor_warnings.sql` y re-aplicado por `20260414185612_fix_security_advisor_warnings.sql`).
 
-Fuerza `video_url = ''` al insertar/actualizar una tool si `is_boosted = false`. Evita que usuarios pongan un vídeo destacado sin pagar la suscripción. Pinneado con `SET search_path = public, pg_temp` para evitar hijacking.
+Reescrito en `20260913240000_boost_lifecycle_fixes.sql`. Al insertar sin Boost, `video_url = ''`. Al actualizar sin Boost, **conserva el valor anterior** en vez de borrarlo: la versión original vaciaba el campo en cada update sin Boost, así que una renovación fallida destruía el vídeo del cliente y no volvía cuando el cobro se recuperaba. La ficha decide si el vídeo se ve por `is_boosted`; el trigger solo impide ponerlo o cambiarlo sin pagar.
 
 ### Slug autogenerado en `news`
 
 Migración: `20260322110514_add_slug_to_news.sql`. Genera slug desde el título usando `regexp_replace` + deduplicación con sufijo incremental.
+
+## Vistas
+
+| Vista | Para qué |
+|-------|----------|
+| `category_tool_counts` | Herramientas por categoría en una consulta (`security_invoker`). Alimenta `/categories` y la tira de la home. |
+| `stripe_user_subscriptions`, `stripe_user_orders` | Estado de facturación del usuario autenticado (`auth.uid()`). |
+
+## Funciones y cron
+
+Todas `SECURITY DEFINER` con `EXECUTE` revocado a `PUBLIC`, `anon` y `authenticated` — en Supabase esos dos roles reciben EXECUTE por privilegios por defecto del esquema, así que nombrarlos no es opcional.
+
+| Función | Quién la llama | Qué hace |
+|---------|----------------|----------|
+| `refresh_tool_trending()` | cron `refresh-tool-trending`, cada hora | Recalcula `views_30d`, `clicks_30d`, `trending_score` (clic = 5× vista, últimos 7 días ×2, mínimo 5 eventos). |
+| `expire_stale_boosts()` | cron `expire-stale-boosts`, 03:15 UTC | Apaga los Boosts con `boost_expires_at` pasado. Los que no tienen fecha los deja y avisa. |
+| `weekly_digest_brief(days)` | Edge Function `digest` | Los hechos de la semana en JSON para escribir el boletín. No redacta. |
+| `user_id_by_email(text)` | Edge Function `stripe-webhook` | Resuelve un pago hecho fuera del checkout de la app. |
 
 ## Extensiones habilitadas
 

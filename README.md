@@ -1,12 +1,12 @@
 # Toolsnocode
 
-Directorio de herramientas no-code, expertos, tutoriales, proyectos y noticias del sector. Frontend en Vite + React + TypeScript, backend en Supabase (Postgres + Auth + Storage + Edge Functions), pagos con Stripe, pipeline de noticias via edge functions programadas por cron.
+Directorio de herramientas no-code, expertos, tutoriales, proyectos y un boletín semanal escrito a partir de los propios datos del directorio. Frontend en Vite + React + TypeScript, backend en Supabase (Postgres + Auth + Storage + Edge Functions), pagos con Stripe.
 
 ## Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, React Router 7, `react-helmet-async` para SEO.
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, React Router 7. SEO por página con `useSEO` (canonical, OpenGraph, JSON-LD).
 - **Backend**: Supabase (Postgres con RLS, Auth, Storage `uploads` bucket, Edge Functions en Deno).
-- **Integraciones**: Stripe (Checkout + Webhooks), OpenAI (reescritura de noticias), DNS verification para reclamación de tools.
+- **Integraciones**: Stripe (Checkout, Webhooks, portal de clientes), DNS verification para reclamación de tools. Sin dependencias de APIs de IA externas: el boletín se escribe desde los datos propios.
 - **Scraper**: servicio Python aparte (`../scraper/`) que alimenta las tablas `tools`, `experts`, `tutorials`.
 - **Deploy**: Vercel (frontend) + Supabase (DB/Functions).
 
@@ -33,19 +33,20 @@ npm run dev            # http://localhost:5173
 ```
 _frontend/
 ├── src/
-│   ├── pages/           # 26 páginas (rutas de React Router)
+│   ├── pages/           # 28 páginas (rutas de React Router)
 │   ├── components/      # auth/, layout/, ui/
 │   ├── hooks/           # useAuth, useFavorites, useSEO
 │   ├── contexts/        # AuthContext
 │   ├── lib/             # supabase, stripe, video clients
 │   └── types/           # tipos TS compartidos
 ├── supabase/
-│   ├── migrations/      # 31 migraciones SQL
-│   └── functions/       # 6 Edge Functions (Deno)
+│   ├── migrations/      # 42 migraciones SQL
+│   └── functions/       # 8 Edge Functions (Deno)
 └── docs/
     ├── ARCHITECTURE.md  # diseño de sistema y flujos
     ├── DATABASE.md      # tablas, triggers, policies
     ├── DEPLOYMENT.md    # deploy, env vars, toggles manuales
+    ├── NEWSLETTER.md    # cómo se escribe la edición semanal
     └── SCRAPER.md       # servicio Python de ingesta
 ```
 
@@ -54,4 +55,5 @@ _frontend/
 - [Arquitectura](./docs/ARCHITECTURE.md)
 - [Base de datos](./docs/DATABASE.md)
 - [Despliegue](./docs/DEPLOYMENT.md)
+- [Boletín semanal](./docs/NEWSLETTER.md)
 - [Scraper](./docs/SCRAPER.md)

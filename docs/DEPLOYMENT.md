@@ -34,7 +34,7 @@ El dominio `toolsnocode.com` lo sirve Bolt.new, que despliega sobre Netlify (de 
 2. **Supabase — orígenes permitidos**: añadir el dominio de Vercel a la allow-list mientras convivan los dos hosts:
    ```bash
    supabase secrets set ALLOWED_ORIGINS="https://toolsnocode.com,https://<proyecto>.vercel.app"
-   supabase functions deploy stripe-checkout verify-tool-dns sitemap fetch-and-rewrite-news enrich-news
+   supabase functions deploy stripe-checkout stripe-webhook stripe-resync stripe-portal verify-tool-dns sitemap track-event digest
    ```
    Sin esto el checkout responde `400 Invalid redirect URL` y CORS bloquea `verify-tool-dns` desde el dominio nuevo.
 3. **Supabase — Auth**: `Authentication → URL Configuration` → añadir la URL de Vercel a *Redirect URLs* (si no, el login con Google y la confirmación por email rebotan) y actualizar *Site URL* tras el corte.
@@ -59,67 +59,73 @@ Se aplican con `supabase db push` desde el CLI, o vía MCP durante ops puntuales
 
 ### Edge Functions
 
-Desplegar todas:
+Ocho funciones. Tres (`stripe-webhook`, `stripe-checkout`, `sitemap`, `digest`)
+se despliegan sin verificación de JWT en la pasarela porque su autenticación es
+otra — la firma de Stripe, o un secreto propio en tiempo constante:
 
 ```bash
-supabase functions deploy stripe-checkout
-supabase functions deploy stripe-webhook
-supabase functions deploy verify-tool-dns
-supabase functions deploy fetch-and-rewrite-news
-supabase functions deploy enrich-news
-supabase functions deploy sitemap
+supabase functions deploy stripe-checkout stripe-webhook verify-tool-dns sitemap digest --no-verify-jwt
+supabase functions deploy stripe-resync stripe-portal track-event
 ```
 
-Secrets por función (se configuran con `supabase secrets set KEY=value`):
+| Función | Qué hace | Secrets que lee |
+|---------|----------|-----------------|
+| `stripe-checkout` | Crea la sesión de Checkout del Boost. Exige `tool_id` y que la herramienta sea del usuario: sin eso Stripe cobraba y el webhook no tenía a qué aplicarlo. | `STRIPE_SECRET_KEY`, `ALLOWED_ORIGINS` |
+| `stripe-webhook` | Recibe eventos de Stripe y aplica/retira el Boost (lógica en `_shared/boost-sync.ts`). Resuelve al usuario por `stripe_customers` y, si no hay fila, por el email que Stripe conoce. Lo que no puede entregar va a `stripe_incidents`. | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| `stripe-resync` | `POST {customer_id}` reprocesa a un cliente desde Stripe con la misma lógica que el webhook; `{customer_id, inspect:true}` y `{price_id}` son solo lectura. Cabecera `X-Resync-Secret`. | `STRIPE_SECRET_KEY`, `RESYNC_SECRET` |
+| `stripe-portal` | Abre el portal de facturación de Stripe para el usuario autenticado (cancelar, tarjeta, facturas). Requiere el portal activado en el panel de Stripe. | `STRIPE_SECRET_KEY`, `ALLOWED_ORIGINS` |
+| `verify-tool-dns` | Verificación de propiedad por registro DNS. | — |
+| `sitemap` | Genera `/sitemap.xml` paginando PostgREST. Las 33 páginas de categoría se anuncian solo con `CATEGORY_PAGES_LIVE=true`. | `SITE_URL`, `CATEGORY_PAGES_LIVE` |
+| `track-event` | Registra `detail_view` / `outbound_click` en `tool_events`. Descarta crawlers por User-Agent y limita por IP. | — |
+| `digest` | `GET` devuelve los hechos de la semana (`weekly_digest_brief`); `POST` publica una edición del boletín o la rechaza si algún enlace interno no existe. Cabecera `X-Digest-Secret`. | `DIGEST_SECRET` |
 
-| Función | Secrets requeridos |
-|---------|-------------------|
-| `stripe-checkout` | `STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` |
-| `stripe-webhook` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` |
-| `verify-tool-dns` | `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` |
-| `fetch-and-rewrite-news` | `OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` |
-| `enrich-news` | `OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` |
-| `sitemap` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (solo lectura) |
+Todas leen además `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, que Supabase inyecta.
 
-Secrets opcionales, compartidos por varias funciones:
+Secrets compartidos u opcionales:
 
 | Secret | Efecto |
 |--------|--------|
-| `ALLOWED_ORIGINS` | Orígenes permitidos para CORS y para las redirecciones de Stripe Checkout, separados por comas. Por defecto, la lista de producción + localhost. |
+| `ALLOWED_ORIGINS` | Orígenes permitidos para CORS y para las redirecciones de Stripe, separados por comas. Sin él, la lista de producción + localhost. |
 | `SITE_URL` | Origen público que anuncia el `sitemap`. Por defecto `https://toolsnocode.com`. |
+| `CATEGORY_PAGES_LIVE` | `true` cuando la build con `/categories` está en producción. Evita anunciar en el sitemap páginas que el SPA aún resuelve con su 404. |
+| `RESYNC_SECRET` | Autoriza `stripe-resync`. Generar con `openssl rand -hex 32`. |
+| `DIGEST_SECRET` | Autoriza `digest`. El mismo valor va en el entorno de Claude Code que ejecuta la rutina del boletín. |
 
-**CORS**: la allow-list es compartida ([`_shared/cors.ts`](../supabase/functions/_shared/cors.ts)) y se configura con el secret `ALLOWED_ORIGINS` (lista separada por comas). Sin el secret, el fallback es `https://toolsnocode.com`, `http://localhost:5173`, `http://localhost:4173`. El primer origen de la lista es el que se devuelve a peticiones de orígenes no permitidos, así que va primero el dominio canónico.
-
-La coincidencia es exacta: los previews de Vercel cambian de URL en cada rama, así que hay que añadir el alias concreto que se quiera probar en vez de un comodín — estos mismos orígenes validan las URLs de redirección de Stripe y un comodín ahí sería un open redirect.
+**CORS**: la allow-list es compartida ([`_shared/cors.ts`](../supabase/functions/_shared/cors.ts)) y se configura con `ALLOWED_ORIGINS`. La coincidencia es exacta: los previews de Vercel cambian de URL en cada rama, así que hay que añadir el alias concreto en vez de un comodín — estos mismos orígenes validan las URLs de redirección de Stripe y un comodín ahí sería un open redirect.
 
 ### Stripe
 
-- **Webhook endpoint**: `https://<project>.supabase.co/functions/v1/stripe-webhook`.
-- **Eventos suscritos**: `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.paid|payment_failed`.
-- Obtener `STRIPE_WEBHOOK_SECRET` al crear el endpoint en Stripe Dashboard.
+- **Webhook endpoint**: `https://<project>.supabase.co/functions/v1/stripe-webhook`. Eventos: `checkout.session.completed`, `customer.subscription.updated|deleted`, `invoice.payment_failed`.
+- **Portal de clientes**: activar una vez en `Settings → Billing → Customer portal`. Sin ese clic `stripe-portal` devuelve error.
+- **Payment Links**: desactivados. Los tres clientes que pagaron entre 2025 y 2026 entraron por Payment Link sin cuenta en el sitio, y ninguno recibió el Boost. El checkout de la app es la única puerta.
+- **Incidencias**: `select * from stripe_incidents where resolved_at is null` — cada Boost que el webhook no pudo entregar, con el motivo y el email del cliente. Se resuelven solas cuando una sincronización posterior lo consigue.
+- **Reprocesar un cliente**:
+  ```bash
+  curl -X POST https://<project>.supabase.co/functions/v1/stripe-resync \
+    -H "apikey: <anon>" -H "Authorization: Bearer <anon>" \
+    -H "X-Resync-Secret: $RESYNC_SECRET" -H "Content-Type: application/json" \
+    -d '{"customer_id":"cus_…"}'
+  ```
+  (con `"inspect": true` no modifica nada; con `{"price_id":"price_…"}` describe un precio).
 
 ### Cron jobs
 
-Definidos en migraciones (`pg_cron`). No requieren deploy separado — se crean al aplicar las migraciones correspondientes.
+Definidos en migraciones (`pg_cron`); se crean al aplicarlas. Los que existen:
+
+| Job | Cuándo | Qué hace |
+|-----|--------|----------|
+| `refresh-tool-trending` | cada hora, minuto 7 | Recalcula `views_30d`, `clicks_30d` y `trending_score` desde `tool_events`. |
+| `expire-stale-boosts` | 03:15 UTC | Apaga los Boosts cuya fecha pasó. Antes esto colgaba del webhook y un Boost solo caducaba si otro cliente pagaba en ese momento. |
+
+Vigilar: `select jobname, status, return_message, start_time from cron.job_run_details order by start_time desc limit 20;`. El cron de noticias anterior falló 150 veces seguidas durante cinco meses sin que nadie mirara esta tabla.
+
+### Boletín semanal
+
+No es un cron: es una rutina de Claude Code que cada lunes a las 08:00 UTC abre una sesión, lee los hechos de la semana por `digest`, escribe la edición desde cero y la publica. La guía editorial y el procedimiento están en [NEWSLETTER.md](./NEWSLETTER.md). Requiere `DIGEST_SECRET` en dos sitios: secrets de Supabase y variables del entorno de Claude Code. Si falta en el entorno, la rutina se para y avisa; no publica a ciegas.
 
 ## Configuración manual post-deploy
 
-Estos toggles no están automatizados y hay que activarlos en el dashboard de Supabase:
-
-- **Secretos de Vault para el cron de noticias** (`Database → Vault`). **Sin esto el cron no funciona y no avisa.** La migración `20260416114149_cron_use_vault_secret.sql` termina su consulta en `WHERE EXISTS (SELECT 1 FROM vault.decrypted_secrets WHERE name = 'cron_shared_secret')`: si el secreto no existe, el job se ejecuta cada día a las 07:00, no hace nada y no registra ningún error. Hay que crear dos secretos a mano:
-  - `supabase_anon_key` — la anon JWT del proyecto.
-  - `cron_shared_secret` — una cadena aleatoria que debe coincidir con el valor de `CRON_SECRET` en los secrets de la función `fetch-and-rewrite-news`.
-
-  Comprobar que funciona:
-  ```sql
-  -- ¿se está ejecutando y con qué resultado?
-  select jobname, status, return_message, start_time
-  from cron.job_run_details order by start_time desc limit 20;
-
-  -- ¿ha entrado contenido nuevo? (si esto se queda atrás, el pipeline está muerto)
-  select max(created_at) from news;
-  ```
-
+- **Stripe → Customer portal**: activado (ver arriba).
 - **Leaked Password Protection**: `Authentication → Providers → Email → Check passwords against HaveIBeenPwned`. Recomendado.
 - **Email templates**: `Authentication → Email Templates`. Personalizar sender + plantillas de confirmación.
 - **Auth providers**: si se añade Google/GitHub, configurar credenciales OAuth.
