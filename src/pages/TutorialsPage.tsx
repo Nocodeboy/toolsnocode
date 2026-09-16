@@ -7,6 +7,7 @@ import type { Tutorial } from '../types';
 import TutorialCard from '../components/ui/TutorialCard';
 import SearchBar from '../components/ui/SearchBar';
 import { useSEO } from '../hooks/useSEO';
+import { ilikeAny } from '../lib/search';
 
 const PAGE_SIZE = 24;
 const contentTypes = ['all', 'video', 'guide', 'course', 'article'] as const;
@@ -52,7 +53,7 @@ export default function TutorialsPage() {
       query = query.eq('difficulty_level', levelFilter);
     }
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,author_name.ilike.%${search}%`);
+      query = query.or(ilikeAny(['title', 'description', 'author_name'], search));
     }
 
     return query.range(from, to);

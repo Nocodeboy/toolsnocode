@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Newspaper, Search, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../hooks/useSEO';
+import { ilikeAny } from '../lib/search';
 import NewsCard from '../components/ui/NewsCard';
 import type { NewsArticle } from '../types';
 
@@ -43,7 +44,7 @@ export default function NewsPage() {
     }
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%,source.ilike.%${search}%`);
+      query = query.or(ilikeAny(['title', 'summary', 'source'], search));
     }
 
     return query.range(from, to);

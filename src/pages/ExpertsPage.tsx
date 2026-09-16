@@ -7,6 +7,7 @@ import type { Expert } from '../types';
 import ExpertCard from '../components/ui/ExpertCard';
 import SearchBar from '../components/ui/SearchBar';
 import { useSEO } from '../hooks/useSEO';
+import { ilikeAny } from '../lib/search';
 
 const PAGE_SIZE = 24;
 
@@ -44,7 +45,7 @@ export default function ExpertsPage() {
       .order('created_at', { ascending: false });
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,bio.ilike.%${search}%,country.ilike.%${search}%`);
+      query = query.or(ilikeAny(['name', 'bio', 'country'], search));
     }
 
     return query.range(from, to);
