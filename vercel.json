@@ -10,6 +10,46 @@
       "destination": "https://exlupbihqexeeyxwmveh.supabase.co/functions/v1/sitemap"
     },
     {
+      "source": "/tools/:slug([a-z0-9-]+)",
+      "destination": "/api/page?p=/tools/:slug",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
+      "source": "/news/:slug([a-z0-9-]+)",
+      "destination": "/api/page?p=/news/:slug",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
+      "source": "/categories/:slug([a-z0-9-]+)",
+      "destination": "/api/page?p=/categories/:slug",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
+      "source": "/categories",
+      "destination": "/api/page?p=/categories",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
@@ -18,15 +58,27 @@
     {
       "source": "/assets/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
       ]
     }
   ]
