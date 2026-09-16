@@ -29,14 +29,51 @@ Deno.serve(async (req) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  let customerId: unknown;
+  let body: Record<string, unknown>;
   try {
-    ({ customer_id: customerId } = await req.json());
+    body = await req.json();
   } catch {
     return Response.json({ error: 'Body must be JSON' }, { status: 400 });
   }
+
+  // Modo lectura: `{ price_id }` describe un precio; `{ customer_id, inspect: true }`
+  // lista las suscripciones del cliente sin tocar la base. Para responder
+  // "¿qué es este price_id?" sin abrir el panel ni compartir la clave.
+  if (typeof body.price_id === 'string') {
+    try {
+      const price = await stripe.prices.retrieve(body.price_id, { expand: ['product'] });
+      const product = price.product as Stripe.Product;
+      return Response.json({
+        id: price.id, active: price.active, currency: price.currency,
+        unit_amount: price.unit_amount, recurring: price.recurring,
+        product: { id: product.id, name: product.name, active: product.active },
+        created: new Date(price.created * 1000).toISOString(),
+      });
+    } catch (err) {
+      return Response.json({ error: err instanceof Error ? err.message : String(err) }, { status: 502 });
+    }
+  }
+
+  const customerId = body.customer_id;
   if (typeof customerId !== 'string' || !/^cus_[A-Za-z0-9]+$/.test(customerId)) {
     return Response.json({ error: 'customer_id must look like cus_…' }, { status: 400 });
+  }
+
+  if (body.inspect === true) {
+    const customer = await stripe.customers.retrieve(customerId);
+    const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 10 });
+    return Response.json({
+      customer: customer.deleted ? { deleted: true } : { email: customer.email, name: customer.name, created: new Date(customer.created * 1000).toISOString() },
+      subscriptions: subs.data.map((s) => ({
+        id: s.id, status: s.status, price_id: s.items.data[0]?.price.id,
+        amount: s.items.data[0]?.price.unit_amount, currency: s.currency,
+        interval: s.items.data[0]?.price.recurring?.interval,
+        created: new Date(s.created * 1000).toISOString(),
+        period_end: new Date(s.current_period_end * 1000).toISOString(),
+        canceled_at: s.canceled_at ? new Date(s.canceled_at * 1000).toISOString() : null,
+        metadata: s.metadata,
+      })),
+    });
   }
 
   try {
