@@ -87,6 +87,9 @@ Deno.serve(async (req) => {
     .from('news')
     .insert({
       title, slug, summary, content, tags,
+      // La portada se genera al vuelo en Vercel (/api/og) a partir del título:
+      // las ediciones no llevan fotografía porque la tesis es la imagen.
+      image_url: `https://toolsnocode.com/api/og?kind=news&slug=${encodeURIComponent(slug)}`,
       url: '', source: 'ToolsNoCode', category: 'No-Code Tools',
       published_at: new Date().toISOString(),
       is_featured: body.featured === true,
