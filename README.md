@@ -32,6 +32,7 @@ npm run dev            # http://localhost:5173
 
 ```
 _frontend/
+├── api/                 # 2 Edge Functions de Vercel: <head> por ruta y og:image
 ├── src/
 │   ├── pages/           # 28 páginas (rutas de React Router)
 │   ├── components/      # auth/, layout/, ui/
@@ -47,6 +48,7 @@ _frontend/
     ├── DATABASE.md      # tablas, triggers, policies
     ├── DEPLOYMENT.md    # deploy, env vars, toggles manuales
     ├── NEWSLETTER.md    # cómo se escribe la edición semanal
+    ├── SEO-AUDIT.md     # auditoría medida y qué se hizo
     └── SCRAPER.md       # servicio Python de ingesta
 ```
 
@@ -56,4 +58,5 @@ _frontend/
 - [Base de datos](./docs/DATABASE.md)
 - [Despliegue](./docs/DEPLOYMENT.md)
 - [Boletín semanal](./docs/NEWSLETTER.md)
+- [Auditoría SEO](./docs/SEO-AUDIT.md)
 - [Scraper](./docs/SCRAPER.md)

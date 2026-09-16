@@ -51,6 +51,19 @@ El dominio `toolsnocode.com` lo sirve Bolt.new, que despliega sobre Netlify (de 
 
 Stripe no necesita cambios: el webhook apunta a Supabase, no al frontend.
 
+### Edge Functions de Vercel (`api/`)
+
+Dos funciones en el edge de Vercel, desplegadas con el frontend. Leen
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` del entorno del proyecto en
+tiempo de ejecución (las mismas variables que usa la build).
+
+| Función | Qué hace |
+|---------|----------|
+| `api/page.ts` | `vercel.json` reescribe `/tools/:slug`, `/news/:slug`, `/categories/:slug` y `/categories` hacia aquí con la ruta en `?p=`. Pide el HTML del SPA a la propia app (cabecera `x-seo-bypass`, que la regla exige que falte), escribe el `<head>` de la ruta y un `<h1>` con los primeros párrafos en `#root`, y responde 404 si la fila no existe. Falla abierto: cualquier error devuelve el HTML sin tocar. Cabecera `x-seo: injected|fallback` para diagnosticar. |
+| `api/og.tsx` | Imágenes sociales 1200×630 (`?kind=news\|tool\|category&slug=…`) con `@vercel/og@0.6.8` — la 1.x no despliega en el edge. Cache de un día; ante error redirige a `/og-image.png`. |
+
+Ver [SEO-AUDIT.md](./SEO-AUDIT.md) para el porqué.
+
 ## Backend — Supabase
 
 ### Migraciones SQL
