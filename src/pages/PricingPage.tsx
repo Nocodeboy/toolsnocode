@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Rocket, TrendingUp, Play, Award, BarChart3, Search,
+  Rocket, TrendingUp, Play, Award, Search,
   ArrowRight, Check, Loader2, Zap, Star, ChevronDown,
   Eye, MousePointerClick, Trophy, Shield, Clock, Users, Wrench
 } from 'lucide-react';
@@ -15,16 +15,16 @@ import type { Tool } from '../types';
 const benefits = [
   {
     icon: TrendingUp,
-    title: 'Priority Positioning',
-    description: 'Your tool appears first in every listing, category page, and related tools section.',
+    title: 'Full-width card, first in line',
+    description: 'A boosted tool takes the whole row at the top of the directory and of every category page, in its own violet card. Not a badge on a small tile: a different shape.',
     color: 'text-brand-400',
     bg: 'bg-brand-500/10',
     border: 'border-brand-500/20',
   },
   {
     icon: Star,
-    title: 'Featured Section',
-    description: 'Get featured on the homepage and category pages where thousands of users discover new tools.',
+    title: 'Boosted section on the homepage',
+    description: 'A dedicated section under the hero, above Editor\'s Picks and everything else, with the same full-width card.',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/20',
@@ -53,20 +53,12 @@ const benefits = [
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20',
   },
-  {
-    icon: BarChart3,
-    title: 'Performance Analytics',
-    description: 'Track views, clicks, and engagement metrics to understand how your tool performs.',
-    color: 'text-orange-400',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/20',
-  },
 ];
 
 const faqs = [
   {
     q: 'What does "Boost" do for my tool?',
-    a: 'Boost gives your tool premium positioning across the entire platform: higher ranking in listings, a spot in the Featured section, a distinctive badge, and the ability to add a demo video.',
+    a: 'Your tool becomes a full-width card at the top of the directory, of every category page, and of the Boosted section on the homepage; you can add a demo video to its page; and it carries a Boosted badge. Trending is the one list Boost does not touch — it is ranked by real visits and clicks only, which is what keeps it meaningful next to your card.',
   },
   {
     q: 'Do I need to own the tool to boost it?',
@@ -82,17 +74,17 @@ const faqs = [
   },
   {
     q: 'How quickly does the boost take effect?',
-    a: 'Your tool is boosted immediately after payment. Priority positioning, the featured badge, and elevated search ranking are all applied within minutes.',
+    a: 'Within minutes of payment. If it has not appeared after an hour, email us with the tool name and we will sort it out by hand — and find out why.',
   },
 ];
 
 const comparison = [
-  { feature: 'Position in listings', standard: 'Random / bottom', boosted: 'Always first' },
-  { feature: 'Featured section', standard: false, boosted: true },
-  { feature: 'Demo video', standard: false, boosted: true },
+  { feature: 'Position in listings', standard: 'By date added', boosted: 'First, full-width' },
+  { feature: 'Boosted section on the homepage', standard: false, boosted: true },
+  { feature: 'Demo video on your page', standard: false, boosted: true },
   { feature: 'Boosted badge', standard: false, boosted: true },
-  { feature: 'Search ranking', standard: 'Standard', boosted: 'Priority' },
-  { feature: 'Analytics dashboard', standard: false, boosted: true },
+  { feature: 'Search results', standard: 'By date added', boosted: 'First' },
+  { feature: 'Trending', standard: 'Earned by real traffic', boosted: 'Earned by real traffic' },
 ];
 
 export function PricingPage() {
@@ -210,7 +202,7 @@ export function PricingPage() {
 
     if (hasActiveSubscription) {
       return (
-        <Link to="/account" className={`btn-primary ${className}`}>
+        <Link to="/account?tab=billing" className={`btn-primary ${className}`}>
           <Check className="w-4 h-4" />
           Manage Subscription
           <ArrowRight className="w-4 h-4" />
@@ -260,13 +252,13 @@ export function PricingPage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-5">
-            Get Found by{' '}
-            <span className="text-gradient">Thousands</span>{' '}
-            of Builders
+            Stand Out Among{' '}
+            <span className="text-gradient">3,000+</span>{' '}
+            Tools
           </h1>
 
           <p className="text-lg text-surface-400 leading-relaxed max-w-2xl mx-auto mb-8">
-            Boosted tools get <strong className="text-surface-200">5x more clicks</strong>, appear first in every listing, and land in the Featured section seen by every visitor.
+            A boosted tool is a <strong className="text-surface-200">full-width card</strong> at the top of the directory, of its category page, and of the homepage — not a badge on a tile.
           </p>
 
           <div className="flex flex-wrap justify-center gap-6 mb-10">
@@ -276,11 +268,11 @@ export function PricingPage() {
             </div>
             <div className="flex items-center gap-2 text-sm text-surface-400">
               <MousePointerClick className="w-4 h-4 text-emerald-400" />
-              <span><strong className="text-surface-200">5x</strong> more clicks</span>
+              <span><strong className="text-surface-200">Full-width</strong> card</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-surface-400">
               <Trophy className="w-4 h-4 text-amber-400" />
-              <span><strong className="text-surface-200">Featured</strong> on homepage</span>
+              <span><strong className="text-surface-200">Boosted</strong> section on homepage</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-surface-400">
               <Shield className="w-4 h-4 text-sky-400" />
@@ -427,12 +419,12 @@ export function PricingPage() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-500/10 via-surface-900/60 to-emerald-500/10 border border-brand-500/25 p-8 text-center">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-500/8 via-transparent to-transparent" />
           <div className="relative">
-            <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider mb-3">Limited spots at this price</p>
+            <p className="text-xs font-semibold text-brand-400 uppercase tracking-wider mb-3">One plan, one price</p>
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-              Your competitors are already boosted.
+              Boost your tool for a year.
             </h2>
             <p className="text-surface-400 max-w-xl mx-auto mb-6 text-sm leading-relaxed">
-              Every day your tool isn't boosted, it's falling behind. Boosted tools appear first — in search, in listings, and on the homepage.
+              First in the directory, first on your category page, a section of its own on the homepage, and a demo video where it counts. Cancel whenever you like.
             </p>
             {renderBoostButton('px-8 py-3')}
           </div>
@@ -470,7 +462,7 @@ export function PricingPage() {
               Ready to get more users?
             </h2>
             <p className="text-surface-400 mb-6 max-w-lg mx-auto text-sm leading-relaxed">
-              Join the builders already using Boost to get discovered faster. {formatPrice(product.price)}/year. Cancel anytime.
+              {formatPrice(product.price)} a year, billed once. Cancel anytime; the boost runs to the end of the period you paid for.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {renderBoostButton('px-8 py-3')}

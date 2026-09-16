@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
+import { createBoostSync } from '../_shared/boost-sync.ts';
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
@@ -12,6 +13,7 @@ const stripe = new Stripe(stripeSecret, {
 });
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+const { syncCustomerFromStripe, deactivateExpiredBoosts } = createBoostSync(stripe, supabase);
 
 Deno.serve(async (req) => {
   try {
@@ -181,187 +183,5 @@ async function handleEvent(event: Stripe.Event) {
 
     default:
       console.info(`Unhandled event type: ${event.type}`);
-  }
-}
-
-async function syncCustomerFromStripe(customerId: string) {
-  try {
-    // `limit: 1` cogía la suscripción más reciente, que no es necesariamente la
-    // que está pagando: un cliente que cancela y vuelve deja una cancelada por
-    // delante. Se piden varias y se elige por estado.
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      limit: 10,
-      status: 'all',
-      expand: ['data.default_payment_method'],
-    });
-
-    if (subscriptions.data.length === 0) {
-      console.info(`No active subscriptions found for customer: ${customerId}`);
-      const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
-        {
-          customer_id: customerId,
-          status: 'not_started',
-        },
-        {
-          onConflict: 'customer_id',
-        },
-      );
-
-      if (noSubError) {
-        console.error('Error updating subscription status:', noSubError);
-        throw new Error('Failed to update subscription status in database');
-      }
-
-      await deactivateBoostForCustomer(customerId);
-      return;
-    }
-
-    const LIVE_STATUSES = ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'];
-    const subscription =
-      subscriptions.data.find((sub) => LIVE_STATUSES.includes(sub.status)) ?? subscriptions.data[0];
-
-    const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
-      {
-        customer_id: customerId,
-        subscription_id: subscription.id,
-        price_id: subscription.items.data[0].price.id,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        ...(subscription.default_payment_method && typeof subscription.default_payment_method !== 'string'
-          ? {
-              payment_method_brand: subscription.default_payment_method.card?.brand ?? null,
-              payment_method_last4: subscription.default_payment_method.card?.last4 ?? null,
-            }
-          : {}),
-        status: subscription.status,
-      },
-      {
-        onConflict: 'customer_id',
-      },
-    );
-
-    if (subError) {
-      console.error('Error syncing subscription:', subError);
-      throw new Error('Failed to sync subscription in database');
-    }
-
-    const toolId = subscription.metadata?.tool_id;
-
-    if (['active', 'trialing'].includes(subscription.status) && toolId) {
-      await activateBoost(customerId, toolId, subscription.current_period_end);
-    } else if (['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
-      // `past_due` ya no entra aquí. Stripe reintenta un cobro fallido durante
-      // semanas antes de rendirse y pasar a `unpaid`; apagar el Boost al primer
-      // fallo le quitaba al cliente lo que ha pagado por una tarjeta que casi
-      // siempre acaba pasando. `unpaid` y `canceled` sí son el final del camino.
-      await deactivateBoostForCustomer(customerId, toolId);
-    } else if (subscription.status === 'past_due') {
-      console.info(`Customer ${customerId} is past_due; boost kept while Stripe retries`);
-    }
-
-    console.info(`Successfully synced subscription for customer: ${customerId}`);
-  } catch (error) {
-    console.error(`Failed to sync subscription for customer ${customerId}:`, error);
-    throw error;
-  }
-}
-
-async function activateBoost(customerId: string, toolId: string, periodEnd: number) {
-  try {
-    const { data: customerData } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (!customerData?.user_id) {
-      console.error(`No user found for customer ${customerId}`);
-      return;
-    }
-
-    const expiresAt = new Date(periodEnd * 1000).toISOString();
-
-    const { error } = await supabase
-      .from('tools')
-      .update({
-        is_boosted: true,
-        boost_expires_at: expiresAt,
-        boost_plan: 'boost',
-      })
-      .eq('id', toolId)
-      .eq('user_id', customerData.user_id);
-
-    if (error) {
-      console.error('Error activating boost:', error);
-    } else {
-      console.info(`Boost activated for tool ${toolId} until ${expiresAt}`);
-    }
-  } catch (error) {
-    console.error('Error in activateBoost:', error);
-  }
-}
-
-async function deactivateBoostForCustomer(customerId: string, toolId?: string) {
-  try {
-    const { data: customerData } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (!customerData?.user_id) return;
-
-    let query = supabase
-      .from('tools')
-      .update({
-        is_boosted: false,
-        boost_expires_at: null,
-        boost_plan: '',
-      })
-      .eq('user_id', customerData.user_id)
-      .eq('is_boosted', true);
-
-    if (toolId) {
-      query = query.eq('id', toolId);
-    }
-
-    const { error } = await query;
-
-    if (error) {
-      console.error('Error deactivating boost:', error);
-    } else {
-      console.info(`Boost deactivated for customer ${customerId}${toolId ? ` tool ${toolId}` : ' (all tools)'}`);
-    }
-  } catch (error) {
-    console.error('Error in deactivateBoostForCustomer:', error);
-  }
-}
-
-/**
- * Deactivate all expired boosts across the platform.
- * Called on every webhook to catch any tools whose boost_expires_at has passed
- * without a corresponding webhook event (e.g., network failures).
- */
-async function deactivateExpiredBoosts() {
-  try {
-    const { error, count } = await supabase
-      .from('tools')
-      .update({
-        is_boosted: false,
-        boost_expires_at: null,
-        boost_plan: '',
-      })
-      .eq('is_boosted', true)
-      .lt('boost_expires_at', new Date().toISOString());
-
-    if (error) {
-      console.error('Error deactivating expired boosts:', error);
-    } else if (count && count > 0) {
-      console.info(`Deactivated ${count} expired boosts`);
-    }
-  } catch (error) {
-    console.error('Error in deactivateExpiredBoosts:', error);
   }
 }

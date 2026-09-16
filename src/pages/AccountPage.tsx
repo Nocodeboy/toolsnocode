@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import {
   User, Wrench, Users, BookOpen, FolderOpen, ShieldCheck,
   Mail, Key, Loader2, CheckCircle2, AlertCircle, Clock,
-  XCircle, ExternalLink, Pencil, ArrowRight, Plus, Rocket, Play
+  XCircle, ExternalLink, Pencil, ArrowRight, Plus, Rocket, Play, CreditCard
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSEO } from '../hooks/useSEO';
+import { openBillingPortal } from '../lib/stripe';
 
 import type { Tool, Expert, Tutorial, Project, ClaimRequest } from '../types';
 import ToolCard from '../components/ui/ToolCard';
@@ -16,7 +17,7 @@ import TutorialCard from '../components/ui/TutorialCard';
 import ProjectCard from '../components/ui/ProjectCard';
 import VerifyToolButton from '../components/ui/VerifyToolButton';
 
-type TabKey = 'profile' | 'tools' | 'experts' | 'tutorials' | 'projects' | 'claims';
+type TabKey = 'profile' | 'tools' | 'experts' | 'tutorials' | 'projects' | 'claims' | 'billing';
 
 const tabs: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: 'profile', label: 'Profile', icon: User },
@@ -25,11 +26,19 @@ const tabs: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: 'tutorials', label: 'My Tutorials', icon: BookOpen },
   { key: 'projects', label: 'My Projects', icon: FolderOpen },
   { key: 'claims', label: 'Claim Requests', icon: ShieldCheck },
+  { key: 'billing', label: 'Billing', icon: CreditCard },
 ];
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabKey>('profile');
+  // `/account?tab=billing` es a donde vuelve el portal de Stripe y a donde
+  // manda "Manage Subscription" desde /pricing: la pestaña tiene que abrirse
+  // desde la URL, no solo desde un clic.
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    tabs.some((t) => t.key === requestedTab) ? (requestedTab as TabKey) : 'profile',
+  );
 
   useSEO({
     title: 'My Account',
@@ -131,6 +140,7 @@ export default function AccountPage() {
       </div>
 
       {activeTab === 'profile' && <ProfileTab user={user} />}
+      {activeTab === 'billing' && <BillingTab boostedTools={tools.filter((t) => t.is_boosted)} />}
       {activeTab === 'tools' && (
         <ContentTab
           loading={contentLoading}
@@ -523,6 +533,118 @@ function ClaimsTab({ loading, requests }: { loading: boolean; requests: ClaimReq
           </div>
         );
       })}
+    </div>
+  );
+}
+
+interface BillingRow {
+  subscription_status: string | null;
+  current_period_end: number | null;
+  cancel_at_period_end: boolean | null;
+  payment_method_brand: string | null;
+  payment_method_last4: string | null;
+}
+
+/**
+ * Lo que un cliente de pago necesita ver y hacer sin escribir a nadie: qué ha
+ * contratado, hasta cuándo, con qué tarjeta, qué herramienta está impulsada —
+ * y un botón que abre el portal de Stripe para cancelar, cambiar la tarjeta o
+ * bajarse la factura.
+ */
+function BillingTab({ boostedTools }: { boostedTools: Tool[] }) {
+  const [row, setRow] = useState<BillingRow | null | undefined>(undefined);
+  const [opening, setOpening] = useState(false);
+  const [portalError, setPortalError] = useState('');
+
+  useEffect(() => {
+    supabase
+      .from('stripe_user_subscriptions')
+      .select('subscription_status, current_period_end, cancel_at_period_end, payment_method_brand, payment_method_last4')
+      .maybeSingle()
+      .then(({ data }) => setRow((data as BillingRow | null) ?? null));
+  }, []);
+
+  const openPortal = async () => {
+    setOpening(true);
+    setPortalError('');
+    try {
+      window.location.href = await openBillingPortal();
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : 'Could not open the billing portal');
+      setOpening(false);
+    }
+  };
+
+  if (row === undefined) {
+    return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>;
+  }
+
+  const status = row?.subscription_status ?? null;
+  const active = status === 'active' || status === 'trialing';
+  const periodEnd = row?.current_period_end
+    ? new Date(row.current_period_end * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : null;
+
+  if (!row || !status || status === 'not_started') {
+    return (
+      <div className="glass-card p-8 text-center max-w-lg mx-auto">
+        <CreditCard className="w-8 h-8 text-surface-500 mx-auto mb-3" />
+        <p className="text-white font-semibold mb-1">No subscription yet</p>
+        <p className="text-sm text-surface-500 mb-5">Boost one of your tools and your billing will show up here.</p>
+        <Link to="/pricing" className="btn-primary text-sm inline-flex"><Rocket className="w-4 h-4" /> See Boost</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="glass-card p-6">
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-surface-500 mb-1">Boost plan</p>
+            <p className="text-lg font-semibold text-white capitalize">{status.replace('_', ' ')}</p>
+          </div>
+          <span className={`badge border ${active ? 'bg-brand-500/15 text-brand-400 border-brand-500/20' : 'bg-surface-800 text-surface-400 border-surface-700'}`}>
+            {active ? 'Active' : status}
+          </span>
+        </div>
+
+        <dl className="grid sm:grid-cols-2 gap-4 text-sm">
+          {periodEnd && (
+            <div>
+              <dt className="text-surface-500 mb-0.5">{row.cancel_at_period_end ? 'Ends on' : 'Renews on'}</dt>
+              <dd className="text-surface-200">{periodEnd}</dd>
+            </div>
+          )}
+          {row.payment_method_last4 && (
+            <div>
+              <dt className="text-surface-500 mb-0.5">Payment method</dt>
+              <dd className="text-surface-200 capitalize">{row.payment_method_brand} ···· {row.payment_method_last4}</dd>
+            </div>
+          )}
+          <div className="sm:col-span-2">
+            <dt className="text-surface-500 mb-0.5">Boosted tool{boostedTools.length !== 1 ? 's' : ''}</dt>
+            <dd className="text-surface-200">
+              {boostedTools.length === 0
+                ? <span className="text-amber-400">None yet — if you have paid, email us and we will sort it out.</span>
+                : boostedTools.map((t) => (
+                    <Link key={t.id} to={`/tools/${t.slug}`} className="text-brand-400 hover:text-brand-300 mr-3">{t.name}</Link>
+                  ))}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button onClick={openPortal} disabled={opening} className="btn-primary text-sm">
+          {opening ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+          Manage billing
+        </button>
+        <span className="text-xs text-surface-500">Cancel, change card, download invoices — on Stripe.</span>
+      </div>
+      {portalError && (
+        <p className="text-sm text-rose-400 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {portalError}</p>
+      )}
     </div>
   );
 }
