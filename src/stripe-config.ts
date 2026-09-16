@@ -20,13 +20,16 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
     currency: 'usd',
     mode: 'subscription',
     highlight: 'Best for tool makers',
+    // Solo lo que existe. Aquí ponía "Monthly performance analytics" y no hay
+    // ninguna vista de analíticas para el maker en toda la aplicación: era una
+    // promesa en la factura de algo que no se entrega.
     features: [
-      'Priority positioning in all listings',
-      'Featured in the "Featured Tools" section',
-      'Add a demo video to your tool page',
-      'Highlighted badge on your tool card',
-      'Higher ranking in search results',
-      'Monthly performance analytics',
+      'Full-width card at the top of the directory',
+      'First on your category page',
+      'Boosted section on the homepage',
+      'Demo video on your tool page',
+      'Boosted badge on your card',
+      'First in search results',
     ],
   },
 ];

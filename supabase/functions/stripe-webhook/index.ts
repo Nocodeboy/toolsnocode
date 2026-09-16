@@ -249,7 +249,7 @@ async function syncCustomerFromStripe(customerId: string) {
 
     const toolId = subscription.metadata?.tool_id;
 
-    if (['active', 'trialing'].includes(subscription.status) && toolId) {
+    if (['active', 'trialing'].includes(subscription.status)) {
       await activateBoost(customerId, toolId, subscription.current_period_end);
     } else if (['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
       // `past_due` ya no entra aquí. Stripe reintenta un cobro fallido durante
@@ -268,35 +268,89 @@ async function syncCustomerFromStripe(customerId: string) {
   }
 }
 
-async function activateBoost(customerId: string, toolId: string, periodEnd: number) {
-  try {
-    const { data: customerData } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
+/**
+ * Quién es el cliente, con red de seguridad.
+ *
+ * `stripe_customers` solo tiene filas de quien pasó por el checkout de la app.
+ * Un pago por Payment Link o desde el panel de Stripe crea el cliente en
+ * Stripe y nada aquí, y el webhook se quedaba sin usuario al que aplicar el
+ * Boost. Así estuvo tres meses una suscripción anual pagada y activa.
+ *
+ * Stripe sí conoce el email. Con el email se llega al usuario, y de paso se
+ * escribe la fila que faltaba para que la próxima vez no haga falta.
+ */
+async function resolveUserId(customerId: string): Promise<string | null> {
+  const { data: mapped } = await supabase
+    .from('stripe_customers')
+    .select('user_id')
+    .eq('customer_id', customerId)
+    .is('deleted_at', null)
+    .maybeSingle();
 
-    if (!customerData?.user_id) {
-      console.error(`No user found for customer ${customerId}`);
-      return;
+  if (mapped?.user_id) return mapped.user_id;
+
+  const customer = await stripe.customers.retrieve(customerId);
+  if (customer.deleted || !customer.email) {
+    console.error(`Customer ${customerId} has no email in Stripe; cannot resolve a user`);
+    return null;
+  }
+
+  const { data: userId, error } = await supabase.rpc('user_id_by_email', { p_email: customer.email });
+  if (error || !userId) {
+    console.error(`No ToolsNoCode user with email ${customer.email} for Stripe customer ${customerId}`);
+    return null;
+  }
+
+  const { error: insertError } = await supabase
+    .from('stripe_customers')
+    .insert({ user_id: userId, customer_id: customerId });
+  if (insertError) {
+    console.error(`Resolved ${customerId} by email but could not store the mapping:`, insertError);
+  } else {
+    console.info(`Stripe customer ${customerId} mapped to user ${userId} by email (paid outside the app checkout)`);
+  }
+
+  return userId;
+}
+
+async function activateBoost(customerId: string, toolId: string | undefined, periodEnd: number) {
+  try {
+    const userId = await resolveUserId(customerId);
+    if (!userId) return;
+
+    // Sin `tool_id` en los metadatos (Payment Link, panel de Stripe) solo hay
+    // una lectura segura: si el maker tiene una única herramienta, es esa. Con
+    // varias no se adivina; se deja escrito y lo decide una persona.
+    let targetToolId = toolId;
+    if (!targetToolId) {
+      const { data: owned } = await supabase.from('tools').select('id, name').eq('user_id', userId).limit(2);
+      if (owned?.length === 1) {
+        targetToolId = owned[0].id;
+        console.info(`No tool_id on subscription; user ${userId} owns exactly one tool (${owned[0].name}), boosting it`);
+      } else {
+        console.error(`No tool_id on subscription and user ${userId} owns ${owned?.length ?? 0} tools; boost NOT applied — needs a human`);
+        return;
+      }
     }
 
     const expiresAt = new Date(periodEnd * 1000).toISOString();
 
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('tools')
       .update({
         is_boosted: true,
         boost_expires_at: expiresAt,
         boost_plan: 'boost',
-      })
-      .eq('id', toolId)
-      .eq('user_id', customerData.user_id);
+      }, { count: 'exact' })
+      .eq('id', targetToolId)
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Error activating boost:', error);
+    } else if (!count) {
+      console.error(`Boost update matched no row: tool ${targetToolId} is not owned by user ${userId}`);
     } else {
-      console.info(`Boost activated for tool ${toolId} until ${expiresAt}`);
+      console.info(`Boost activated for tool ${targetToolId} until ${expiresAt}`);
     }
   } catch (error) {
     console.error('Error in activateBoost:', error);
@@ -305,13 +359,8 @@ async function activateBoost(customerId: string, toolId: string, periodEnd: numb
 
 async function deactivateBoostForCustomer(customerId: string, toolId?: string) {
   try {
-    const { data: customerData } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (!customerData?.user_id) return;
+    const userId = await resolveUserId(customerId);
+    if (!userId) return;
 
     let query = supabase
       .from('tools')
@@ -320,7 +369,7 @@ async function deactivateBoostForCustomer(customerId: string, toolId?: string) {
         boost_expires_at: null,
         boost_plan: '',
       })
-      .eq('user_id', customerData.user_id)
+      .eq('user_id', userId)
       .eq('is_boosted', true);
 
     if (toolId) {
