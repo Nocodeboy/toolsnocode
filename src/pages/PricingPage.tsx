@@ -202,7 +202,7 @@ export function PricingPage() {
 
     if (hasActiveSubscription) {
       return (
-        <Link to="/account" className={`btn-primary ${className}`}>
+        <Link to="/account?tab=billing" className={`btn-primary ${className}`}>
           <Check className="w-4 h-4" />
           Manage Subscription
           <ArrowRight className="w-4 h-4" />
