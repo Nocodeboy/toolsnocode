@@ -47,39 +47,58 @@ builtin the Edge runtime rejects) renders 1200×630 cards on request:
 `digest` sets it by default for future ones. Verified: 86 KB / 96 KB / 74 KB
 PNGs for the three kinds, 302 fallback on an unknown slug.
 
-## 3. Thin content — open
+## 3. Thin content — in progress
 
 | | Tools |
 |---|---:|
 | Total indexed | 3,094 |
-| Description under 200 characters | 2,150 (69%) |
-| Description under 80 characters | 376 (12%) |
-| Median description | ~228 characters |
+| Description under 200 characters (16 Sep) | 2,150 (69%) |
+| Description under 80 characters (16 Sep) | 376 (12%) |
+| Under 80 after the first pass (17 Sep) | 270 |
 
-Seven in ten tool pages are a name, a tagline and two sentences. The head
-injection makes each one *correct*; it does not make it *substantial*.
+**Decision (17 Sep): rewrite, not deindex.** Written from each tool's own
+site, never from imagination:
 
-Options, in order of honesty:
+1. Fetch the homepage of every tool in the set; extract title, meta and
+   OpenGraph descriptions, headings and visible text.
+2. Writers work from row + site extract under strict rules: only claims
+   traceable to the inputs, 110–210 words, banned marketing filler, no
+   verbatim site sentences, and **return null when the inputs cannot
+   support three true sentences** — a thin page beats a padded one.
+3. A validator rejects anything outside the rules (length, banned words,
+   URLs, Markdown, missing the tool's name, duplicated openings).
+4. Applied with a backup table (`tools_description_backup_20260917`).
 
-1. **Deindex the 376 under 80 characters** the way experts and tutorials were
-   deindexed (sitemap exclusion + `noindex` from the edge function when
-   `length(description) < 80`). Same reasoning: pages with nothing to say
-   drag the domain, and they stay navigable.
-2. **Let owners fix their own.** The owner stats card on the tool page already
-   exists; a line there — "Your description is 64 characters. Pages under 200
-   rarely rank." — costs nothing and targets the only people who can write
-   it well.
-3. Generating descriptions is off the table: no external AI APIs, by
-   decision.
+First pass on the 376 under 80 characters: 363 had a website; 281
+answered; 183 gave enough signal; **106 rewritten and live**, 75 returned
+null (Cloudflare blocks, empty SPA shells, parked domains), 1 rejected by
+the validator. The pass also surfaced 17 listings whose domain now serves
+spam, gambling or a different company and 7 products that have shut down
+— see [DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md).
 
-Recommendation: 1 and 2 together.
+Next passes: the remaining 270 under 80, then the ~2,000 under 200, in
+batches with the same pipeline.
 
-## 4. Smaller findings
+## 4. Images
 
-- **Google Fonts** (`Inter`, 4 weights) load render-blocking from
-  `fonts.googleapis.com`. Self-hosting the two weights actually used, or
-  `font-display: swap` plus a system-font first paint, removes a third-party
-  round trip from every page. Low effort, measurable on mobile.
+Checked all 6,047 logo and screenshot URLs on 17 September: **345 logos
+(11%) and 452 screenshots (15%) broken** — 404s from Google's favicon
+service, an expired third-party screenshot service, hotlink-protected
+CDNs, and 35 rows where an automated client had stored `'h'` as a URL.
+
+Done: a database trigger normalises media and tags on every write; the
+tool page hides an image that fails instead of printing its alt text;
+`ingest-image` copies external images into our own bucket; and the
+broken/missing set is being backfilled from each site's `apple-touch-icon`
+and `og:image`. Real screenshots need a browser that can reach the web,
+which this environment cannot do with TLS verification on.
+
+## 5. Smaller findings
+
+- **Google Fonts** — done 17 Sep. Inter is self-hosted via `@fontsource`
+  (latin, four weights, ~24 KB each, `font-display: swap`) from `/assets`
+  with immutable caching; the render-blocking stylesheet and both
+  preconnects are gone.
 - **`/og-image.png` is 182 KB.** A 1200×630 dark card should be under 60 KB.
   Re-export.
 - **`<img alt>`**: checked across all `.tsx` with a multi-line parser. Every
@@ -91,7 +110,7 @@ Recommendation: 1 and 2 together.
 - **Tool `<title>`** is `Name — tagline` and can run past 60 characters. Google
   truncates; the name is always first. Acceptable.
 
-## 5. What cannot be measured from here
+## 6. What cannot be measured from here
 
 **Google Search Console is not set up.** Everything above is what the site
 sends; only Search Console shows what Google does with it — indexed pages,
