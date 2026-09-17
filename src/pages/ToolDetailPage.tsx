@@ -207,7 +207,15 @@ export default function ToolDetailPage() {
         <div className="flex flex-col sm:flex-row items-start gap-5">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-surface-800 border border-surface-700/50 flex items-center justify-center overflow-hidden flex-shrink-0">
             {tool.logo_url ? (
-              <img src={tool.logo_url} alt={tool.name} className="w-full h-full object-cover rounded-2xl" loading="lazy" />
+              <img
+                src={tool.logo_url}
+                alt={tool.name}
+                className="w-full h-full object-cover rounded-2xl"
+                loading="lazy"
+                // Un logo roto enseñaba el texto alternativo dentro del cuadro. Si
+                // no carga, se retira y queda la inicial que hay debajo.
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             ) : (
               <span className="text-2xl font-bold text-surface-400">{tool.name.charAt(0)}</span>
             )}
@@ -328,6 +336,7 @@ export default function ToolDetailPage() {
                 alt={`${tool.name} screenshot ${i + 1}`}
                 className="h-48 rounded-xl border border-surface-800/50 object-cover flex-shrink-0"
                 loading="lazy"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             ))}
           </div>
@@ -407,7 +416,7 @@ export default function ToolDetailPage() {
               <Link key={exp.id} to={`/experts/${exp.slug}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/50 hover:bg-surface-800 border border-surface-700/30 transition-colors">
                 <div className="w-10 h-10 rounded-full bg-surface-700 overflow-hidden flex-shrink-0">
                   {exp.avatar_url ? (
-                    <img src={exp.avatar_url} alt={exp.name} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={exp.avatar_url} alt={exp.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-sm font-bold text-surface-400">{exp.name.charAt(0)}</div>
                   )}
@@ -450,7 +459,7 @@ export default function ToolDetailPage() {
               <Link key={alt.id} to={`/tools/${alt.slug}`} className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/50 hover:bg-surface-800 border border-surface-700/30 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-surface-700 border border-surface-600/50 overflow-hidden flex-shrink-0 flex items-center justify-center">
                   {alt.logo_url ? (
-                    <img src={alt.logo_url} alt={alt.name} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={alt.logo_url} alt={alt.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   ) : (
                     <span className="text-sm font-bold text-surface-400">{alt.name.charAt(0)}</span>
                   )}

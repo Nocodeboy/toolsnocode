@@ -102,7 +102,19 @@ export default function ToolFormPage() {
     setError('');
     setSaving(true);
 
-    const tagsArr = form.tags
+    // Si alguien pega un array JSON en el campo de etiquetas — un agente
+    // automatizado lo ha hecho 35 veces — se parsea en vez de trocearlo por
+    // comas. El trigger de la base hace lo mismo; esto es para que el maker
+    // vea sus etiquetas bien antes de guardar.
+    const rawTags = form.tags.trim();
+    let tagSource = rawTags;
+    if (rawTags.startsWith('[')) {
+      try {
+        const parsed: unknown = JSON.parse(rawTags);
+        if (Array.isArray(parsed)) tagSource = parsed.map(String).join(',');
+      } catch { /* no era JSON válido: sigue el camino normal */ }
+    }
+    const tagsArr = tagSource
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
