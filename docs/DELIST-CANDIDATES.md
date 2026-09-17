@@ -128,3 +128,69 @@ Connection failed, 4xx/5xx, or an empty response with a browser user agent. Some
 1. Hijacked/parked/other-product: **remove** — an outbound link to gambling or spam is worse than no listing.
 2. Shut down: keep the page with a one-line notice, or remove; either way drop from the sitemap.
 3. Unreachable: re-check in a week; remove what is still down.
+
+---
+
+# Second pass — 17 September 2026 (80–107 character band)
+
+## Domain hijacked (3)
+
+| slug | what the site is now |
+|---|---|
+| `ai-consulting-tools` | domain now serves an Indonesian slot-gambling page |
+| `blizzy-ai` | domain now serves an online casino page |
+| `thumbly` | domain now serves a Vietnamese football streaming site |
+
+## Renamed, pivoted, or offline per the site (12)
+
+| slug | note |
+|---|---|
+| `anvil` | Framer "Site Not Found" — product appears offline |
+| `casetext` | now Thomson Reuters CoCounsel |
+| `galileo` | renamed Stitch |
+| `gpt-engineer` | superseded by lovable.dev / gptengineer.app |
+| `luminal` | website returns 404 |
+| `meshcapade` | now part of Epic Games; online platforms shut down |
+| `mine-my-reviews` | site is Senja, a different brand |
+| `pykaso-ai` | rebranded Pyksel |
+| `qonqur` | pivoted to a request-only educational system |
+| `tidalflow` | pivoted to a women's health app (Lila) |
+| `toastyai` | renamed Outcast |
+| `wonderway-coach` | renamed Verity (by BTS) |
+
+## Website unreachable (30)
+
+- `adobe-firefly` — https://adobe.prf.hn/click/camref:1011l4m7s2
+- `applaime` — https://www.applaime.com/
+- `catbirdai` — https://www.catbird.ai/
+- `characterx` — https://characterx.ai
+- `chatmap` — https://chat.mymap.ai/
+- `chatnbx` — https://chat.nbox.ai/
+- `cogix` — https://cogix.io/
+- `crossplag` — https://crossplag.com/ai-content-detector/
+- `danswer` — https://www.danswer.ai
+- `dola` — http://hidola.ai/
+- `dora-ai` — https://a.dora.run/
+- `ecommerce-prompt-generator` — https://www.ecommerceprompts.com/
+- `gees` — https://gees.com/?plan=pedia
+- `hey-internet` — https://heyinternet.ai/
+- `hourone` — https://hourone.ai/
+- `junggpt` — https://jung-gpt.com/
+- `kintext` — https://kintext.com/
+- `knibble` — https://knibble.ai/
+- `lightbulb-university` — https://lightbulb.university/
+- `lynq` — https://www.lynq.ai
+- `minion-ai` — https://www.minion.ai/
+- `penny-ai` — https://penny.im/
+- `playht` — https://play.ht/
+- `polyhive` — https://www.polyhive.ai/
+- `sonara` — https://www.sonara.ai/
+- `synthetaic` — https://www.synthetaic.com
+- `theb-ai` — https://theb.ai/
+- `vendorful` — https://vendorful.ai/
+- `videoshorts` — https://www.videoshorts.ai/
+- `wandergenie` — https://www.wandergenie.app/
+
+## A pattern worth a decision of its own
+
+Across both passes the writers flagged the **`pricing` field as contradicted by the tool's own site on roughly a third of the rows they could read** — listed `free` where the site sells plans, listed `freemium` where the site only offers a demo. The `category` is wrong on a smaller but steady share (a fleet-management platform under Chatbots, an autonomy company under Research). Both fields come from the scraper's first guess and nobody has revisited them. The rewritten descriptions state what the site shows; the fields still say the old value. A pass that reconciles `pricing` from the same site fetch is cheap and would fix the listing filters, which currently sort by a field that is often wrong.
