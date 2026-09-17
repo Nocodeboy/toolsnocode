@@ -76,8 +76,12 @@ the validator. The pass also surfaced 17 listings whose domain now serves
 spam, gambling or a different company and 7 products that have shut down
 — see [DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md).
 
-Next passes: the remaining 270 under 80, then the ~2,000 under 200, in
-batches with the same pipeline.
+Second pass (80–107 characters, 184 rows): 154 sites answered, 119 gave
+signal, **76 rewritten and live**, 43 null. Cumulative: 182 rewritten,
+average description length 228 → 288 characters. Remaining under 200:
+1,968. Same pipeline, ~10 minutes per 180-row batch; the null rate rises
+as the band gets shorter because the thinnest listings are also the ones
+whose sites have the least to say.
 
 ## 4. Images
 
