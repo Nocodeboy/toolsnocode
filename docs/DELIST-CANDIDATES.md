@@ -194,3 +194,82 @@ Connection failed, 4xx/5xx, or an empty response with a browser user agent. Some
 ## A pattern worth a decision of its own
 
 Across both passes the writers flagged the **`pricing` field as contradicted by the tool's own site on roughly a third of the rows they could read** — listed `free` where the site sells plans, listed `freemium` where the site only offers a demo. The `category` is wrong on a smaller but steady share (a fleet-management platform under Chatbots, an autonomy company under Research). Both fields come from the scraper's first guess and nobody has revisited them. The rewritten descriptions state what the site shows; the fields still say the old value. A pass that reconciles `pricing` from the same site fetch is cheap and would fix the listing filters, which currently sort by a field that is often wrong.
+
+---
+
+# Third and fourth passes — 17–18 September 2026 (107–134 character band)
+
+## Domain hijacked (2)
+
+| slug | what the site is now |
+|---|---|
+| `penguinbot` | domain now serves unrelated Indonesian gambling content |
+| `wallpapersfyi` | domain now serves an Indonesian gambling wallpaper page |
+
+## Renamed, acquired, pivoted, or offline per the site (33)
+
+| slug | note |
+|---|---|
+| `arzule` | site now shows Datoric, a robotics training-data company |
+| `audyo` | Framer "Site Not Found" — product appears offline |
+| `ayora` | now part of BigHand |
+| `banana` | site links a "Sunset" page; service being discontinued |
+| `basalt` | "Site Not Found" — no site configured at this address |
+| `blockode-ai-photo-studio` | site presents Skybox AI by Blockade Labs; listing name does not match |
+| `chatterdocs` | merged into ResolveAI |
+| `cognigy` | now NiCE Cognigy |
+| `create` | renamed Anything |
+| `creative-fast-aid` | renamed Selfstorm |
+| `deci` | site resolves to NVIDIA's homepage |
+| `facemod` | now FaceHub / SelfyzAI |
+| `flowrite` | now MailMaestro (acquired by Maestro Labs) — `mailmaestro` is already listed |
+| `get100x` | site now presents 100X Labs; the Dany chatbot is gone |
+| `gptzero` | site says GPTZero is now part of Superhuman |
+| `guardrails` | Guardrails AI joins Harvey — `harvey` is already listed |
+| `host-ai` | site now belongs to Elara Spatial |
+| `magicphotos` | site now resolves to Magic Studio (InstaHeadshots) |
+| `marscode` | renamed Trae |
+| `memgpt` | now Letta / Letta Agent |
+| `metaplane` | now Metaplane by Datadog |
+| `moonhub` | Moonhub team joins Salesforce |
+| `motiff` | discontinued, per its site; data export until 31 October 2026 |
+| `nlx` | site serves an AWS Amazon Connect page |
+| `nswr` | renamed Blabla |
+| `opencity` | site now shows ShiftCoach by TORI |
+| `peppertypeai` | site now presents Pepper, a services agency |
+| `pixelicious` | now Scenario's Pixelate feature, not a standalone product |
+| `relicx` | site resolves to a Harness product page |
+| `run` | website returns 404 |
+| `stable-horde` | now AI Horde |
+| `supercreator` | sunset, per its site |
+| `theloops` | now IFS Loops |
+| `trovo-health` | site now belongs to Thesis |
+| `whimsey` | site is now a one-person consulting practice, not the listed product |
+| `wisdomise` | site now describes a Swiss software agency, not the crypto product listed |
+
+## Not a software tool (1)
+
+| slug | note |
+|---|---|
+| `branded-rental-cars` | a Marrakech car-rental agency |
+
+## Website unreachable (12)
+
+- `doco` — https://www.trydoco.com/
+- `editapp-ai` — https://editapp.ai/
+- `photofuse` — https://photofuse.ai/
+- `polyai` — https://www.polyai.com
+- `practalk` — https://www.practalk.io
+- `promptroi` — https://app.promptroi.io/
+- `pthai` — https://pth.ai/
+- `roamaround` — https://www.roamaround.io/
+- `scopemoney` — https://scope.money/
+- `stackbear` — https://stackbear.com/
+- `twitterbio` — https://www.twitterbio.com/
+- `writesparkleai` — https://writesparkle.ai/
+
+Also flagged but kept: `thumbsnap` (Cloudflare 522), `vocode` and `museai` (fetch errors), `oss-insight` (Data Explorer under maintenance). Re-check by hand.
+
+## Pricing reconciled
+
+The pricing reconciliation suggested in the previous section is done for every row the writers could read: **107 rows changed** (backup in `tools_pricing_backup_20260917`), only where the site gave explicit evidence and the observed model differed from the listed one. The dominant corrections were `freemium → enterprise` (demo-only vendors) and `free → paid` (a free trial had been recorded as free). Rows where the site said nothing about pricing were left alone. Distribution after the pass: freemium 1,757 · free 810 · paid 474 · enterprise 56.
