@@ -1,5 +1,5 @@
 import type { CategoryRow, NewsRow, ToolRow } from './data';
-import { getCategoriesWithCounts, getCategory, getCategoryToolCount, getCategoryTopTools, getNews, getTool } from './data';
+import { getCategoriesWithCounts, getCategory, getCategoryToolCount, getCategoryTopTools, getNews, getNewsList, getTool } from './data';
 import { CATEGORY_COPY } from '../../src/data/categoryCopy';
 
 /**
@@ -60,6 +60,8 @@ export async function describe(pathname: string): Promise<PageMeta | null> {
   }
 
   if (/^\/categories\/?$/.test(pathname)) return categoriesIndexMeta(await getCategoriesWithCounts());
+
+  if (/^\/news\/?$/.test(pathname)) return newsIndexMeta(await getNewsList(20));
 
   return null; // el resto se sirve tal cual
 }
@@ -148,7 +150,9 @@ function newsMeta(slug: string, n: NewsRow | null): PageMeta {
     type: 'article',
     jsonLd: {
       '@context': 'https://schema.org',
-      '@type': 'NewsArticle',
+      // Lo que escribimos nosotros es un artículo de blog con datos propios;
+      // lo que resume prensa ajena sigue siendo NewsArticle.
+      '@type': n.source === SITE_NAME ? 'Article' : 'NewsArticle',
       headline: n.title,
       description: n.summary,
       image: [image],
@@ -166,6 +170,46 @@ function newsMeta(slug: string, n: NewsRow | null): PageMeta {
 ${paragraphs.map((p) => `<p>${md(p)}</p>`).join('\n')}
 <p><a href="/news">More from the newsletter</a> · <a href="/tools">Browse the directory</a></p>
 </article></main>`,
+  };
+}
+
+function newsIndexMeta(items: NewsRow[]): PageMeta {
+  const description = 'Data stories from the ToolsNoCode directory: what 3,000 AI and no-code listings say about pricing, churn and what builders actually ship, plus the weekly digest of new tools.';
+  return {
+    title: 'AI & No-Code News and Data Stories',
+    description,
+    canonical: `${BASE_URL}/news`,
+    image: DEFAULT_IMAGE,
+    type: 'website',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'AI & No-Code News and Data Stories',
+        url: `${BASE_URL}/news`,
+        description,
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: items.length,
+          itemListElement: items.map((n, i) => ({ '@type': 'ListItem', position: i + 1, url: `${BASE_URL}/news/${n.slug}`, name: n.title })),
+        },
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: BASE_URL },
+          { '@type': 'ListItem', position: 2, name: 'News', item: `${BASE_URL}/news` },
+        ],
+      },
+    ],
+    body: `<main><h1>AI &amp; No-Code News and Data Stories</h1>
+<p>${esc(description)}</p>
+<ul>
+${items.map((n) => `<li><a href="/news/${esc(n.slug)}">${esc(n.title)}</a> — <time datetime="${esc(n.published_at)}">${esc(n.published_at.slice(0, 10))}</time> · ${esc(n.source)}</li>`).join('\n')}
+</ul>
+<p><a href="/feed.xml">RSS feed</a> · <a href="/tools">Browse the directory</a></p>
+</main>`,
   };
 }
 
