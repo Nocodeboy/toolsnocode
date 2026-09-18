@@ -10,6 +10,10 @@
       "destination": "https://exlupbihqexeeyxwmveh.supabase.co/functions/v1/sitemap"
     },
     {
+      "source": "/feed.xml",
+      "destination": "/api/feed"
+    },
+    {
       "source": "/tools/:slug([a-z0-9-]+)",
       "destination": "/api/page?p=/tools/:slug",
       "missing": [
@@ -22,6 +26,16 @@
     {
       "source": "/news/:slug([a-z0-9-]+)",
       "destination": "/api/page?p=/news/:slug",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
+      "source": "/news",
+      "destination": "/api/page?p=/news",
       "missing": [
         {
           "type": "header",

@@ -35,6 +35,9 @@ export interface CategoryRow { name: string; slug: string; description: string |
 export const getTool = (slug: string) =>
   one<ToolRow>(`tools?select=name,slug,tagline,description,logo_url,screenshot_urls,pricing,website,is_boosted,updated_at,category:categories(name,slug)&slug=eq.${encodeURIComponent(slug)}&limit=1`);
 
+export const getNewsList = (n = 20) =>
+  rest<NewsRow>(`news?select=title,slug,summary,content,image_url,published_at,source,tags&order=published_at.desc&limit=${n}`);
+
 export const getNews = (slug: string) =>
   one<NewsRow>(`news?select=title,slug,summary,content,image_url,published_at,source,tags&slug=eq.${encodeURIComponent(slug)}&limit=1`);
 
