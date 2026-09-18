@@ -367,3 +367,48 @@ Pricing reconciled for this pass: 33 rows (cumulative 140).
 Also unreadable but kept: `github-copilot` (access error), `paraflow`, `g2q-computing`, `ninja-ai`, `resume-ai-scanner`, `finepixel` (site text too thin to write from).
 
 Pricing reconciled for this pass: 45 rows (cumulative 185).
+
+---
+
+# Seventh pass — 18 September 2026 (150–155 character band)
+
+## Remove first (1)
+
+| slug | what the site is now |
+|---|---|
+| `noowai` | domain now serves Indonesian lottery content |
+
+## Renamed, acquired, pivoted, or shut down per the site (12)
+
+| slug | note |
+|---|---|
+| `accio-sourcing` | site now presents Accio Work, a different product |
+| `alfred-ai` | site is Treblle's platform page; no Alfred product |
+| `chatwithpdf` | stored tagline and site both describe Paperguide, not ChatWithPDF |
+| `dashworks` | site banner says Dashworks is joining HubSpot |
+| `distributional` | now Talaria Scientific |
+| `finden` | site is now an AI services firm, not the search tool listed |
+| `forage-mail` | stored tagline says operations ended 1 March 2026; site is gone |
+| `full-venue` | site now shows Clustie, a different product |
+| `metagpt` | stored data is a duplicate of the `atoms` listing; nothing about MetaGPT |
+| `playbook` | site says the original product stopped operating in October 2025 |
+| `seam-ai` | joining Clarify; product folded into another company |
+| `snapheadshots` | site is PFPMaker, a different brand |
+| `travel-plan-ai` | site is GuideGo, a different brand |
+| `zeda-io` | website returns 404 |
+
+## Website unreachable (9)
+
+- `equally-ai` — https://equally.ai/
+- `flint` — https://www.flintk12.com/
+- `hume-ai` — https://hume.ai (almost certainly a bot block; active product)
+- `picso` — https://picso.ai/
+- `post-boost` — https://www.post-boost.com/
+- `straico` — https://straico.com/ (likely a bot block)
+- `tensorflow` — https://www.tensorflow.org/ (bot block; not a dead site)
+- `troj-ai` — https://www.troj.ai
+- `unriddle` — https://www.unriddle.ai/ (likely a bot block)
+
+Also unreadable but kept: `exa-websets` (Vercel bot check), `viralmoment`, `bubble` (site text too thin to write from; Bubble is obviously alive).
+
+Pricing reconciled for this pass: 60 rows (cumulative 245).
