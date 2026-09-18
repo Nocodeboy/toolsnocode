@@ -323,3 +323,47 @@ The pricing reconciliation suggested in the previous section is done for every r
 Also unreadable but kept: `copilot`, `devrev`, `excel-copilot`, `quizlet-ai`, `mem`, `toma` (bot checks, sign-in or captcha pages), `microsoft-copilot`, `stratupai`, `roboost`, `ghost`, `briq`, `dream-decoder`, `aidaptive`, `agentscale-ai` (site text too thin to write from).
 
 Pricing reconciled for this pass: 33 rows (cumulative 140).
+
+---
+
+# Sixth pass — 18 September 2026 (143–150 character band)
+
+## Remove first (5)
+
+| slug | what the site is now |
+|---|---|
+| `code-genius` | domain now serves an Indonesian gambling site |
+| `ai-credit-repair` | site returns 404 and the stored tagline is Indonesian gambling spam |
+| `40h` | stored tagline describes a Vietnamese betting platform; site is a Cloudflare block page |
+| `kwakwa` | domain now hosts an unrelated Hebrew entertainment channel |
+| `knowledge` | listing name does not match the site, which is a Cal.com referral link |
+
+## Renamed, acquired, pivoted, or offline per the site (11)
+
+| slug | note |
+|---|---|
+| `aidash` | site announces acquisition by Schneider Electric |
+| `botly` | site is a bare server directory listing |
+| `excel-formula-bot` | Formula Bot renamed Better Analyst |
+| `insta-headshots` | now Magic Studio (`magicphotos` above points at the same product) |
+| `jasper-art` | page now presents Jasper Image Pipelines; the Jasper Art name is gone |
+| `newhero` | website returns 404 |
+| `notebooklm` | page now titled Gemini Notebook |
+| `obviously-ai` | now Zams; the site is an archive |
+| `one-ai` | now Harmony AI, a monday.com company |
+| `phaselab` | renamed Phaselaw |
+| `tensorplex` | site describes a different product than the stored tagline |
+
+## Website unreachable (7)
+
+- `ark-fi` — https://www.arkfi.io
+- `assembly` — https://assembly.com/
+- `axyon-ai` — https://axyon.ai
+- `easygen` — https://www.easygen.io/
+- `genesy-ai` — https://www.genesy.ai
+- `lenix` — https://lenix.ai/
+- `vidflux-ai` — https://vidflux.ai/
+
+Also unreadable but kept: `github-copilot` (access error), `paraflow`, `g2q-computing`, `ninja-ai`, `resume-ai-scanner`, `finepixel` (site text too thin to write from).
+
+Pricing reconciled for this pass: 45 rows (cumulative 185).
