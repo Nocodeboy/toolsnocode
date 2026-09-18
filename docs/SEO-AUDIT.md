@@ -168,3 +168,43 @@ impressions, the queries category pages start appearing for, and the
 soft-404s that should now decline. Verify the domain, submit
 `https://toolsnocode.com/sitemap.xml`, and read it weekly. It is the only
 instrument for the next three months.
+
+## 7. News and blog (18 September)
+
+What `news` actually held on 18 September: 21 rows. Twenty were
+paraphrases of TechCrunch, The Verge and Ars Technica pieces from one week
+in March 2026, written by the (since unscheduled) daily news cron, with
+titles containing raw HTML entities and slugs like
+`amazon8217s-trainium-lab…-plf98`. One was the weekly digest. Paraphrased
+third-party news is not an asset for search: it is dated, derivative and
+competes with the originals it links to. The entities in titles were
+decoded in place; the slugs were left alone to keep the URLs stable.
+
+The opportunity is the opposite kind of content: pieces written from data
+only this directory has. Done today:
+
+- **`/news` is server-rendered** through the same edge layer as tool and
+  category pages: title, description, CollectionPage/ItemList JSON-LD and a
+  crawlable list of the latest 20 pieces. Before, it was the generic SPA
+  shell.
+- **RSS at `/feed.xml`** (edge function, 50 latest items, advertised with
+  `<link rel="alternate">` in the document head). New pieces are
+  discoverable the day they are published instead of on the next sitemap
+  crawl.
+- **Our own pieces carry `Article` schema**; third-party summaries keep
+  `NewsArticle`.
+- **Two data stories published**, both validated by the digest endpoint
+  (every internal link exists, at least four tool links each):
+  [AI tool churn: 2,000 sites checked, one listing in ten gone](https://toolsnocode.com/news/ai-tool-churn-2000-websites-checked-2026-09)
+  and
+  [Half the AI tools that called themselves freemium were not](https://toolsnocode.com/news/freemium-ai-tools-pricing-reality-2026-09).
+  Every number in them comes from the delisting and pricing passes
+  documented above.
+
+What to keep doing: one data story a month from the directory (intake by
+category, pricing shifts, who is acquiring whom, what claimed listings do
+differently), plus the Monday digest. Each piece should link to at least
+four listed tools and two categories, which the publish endpoint enforces.
+The twenty March paraphrases are a product decision: they add nothing and
+could be delisted the same way tools were, but they are harmless enough to
+leave while the section fills with original work.
