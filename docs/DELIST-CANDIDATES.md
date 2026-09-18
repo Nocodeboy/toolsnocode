@@ -555,3 +555,57 @@ Pricing reconciled for this pass: 61 rows (cumulative 354).
 Also unreadable but kept: `bigideasdb`, `freebeat`, `semai`, `tldr-this` (bot checks), `wellpin` (SSL error 525), `auto-gpt` (GitHub fetch error), `documind`, `eesel-app`, `storywise` (site text too thin).
 
 Pricing reconciled for this pass: 42 rows (cumulative 396).
+
+---
+
+# Eleventh pass — 18 September 2026 (183–199 character band)
+
+## Renamed, acquired, pivoted, or shut down per the site (19)
+
+| slug | note |
+|---|---|
+| `agentic` | site is an unrelated AI-tools directory, not the briefing product listed |
+| `ai-meal-planner` | site is a supplement store; no meal-planner content |
+| `bagoodex` | site says "Move to Sigma AI" on a new domain |
+| `deltia` | site says Deltia is now Almetra |
+| `eself-ai` | acquired by Kaltura; now Agentic Avatars |
+| `greenlite` | site now shows Bretton, a different product |
+| `kanlet` | site describes a different product |
+| `kofax` | renamed Tungsten Automation |
+| `magical` | site now describes a healthcare agent platform, not the autofill tool listed |
+| `rolemodel-ai` | site describes a different avatar product |
+| `shopify-logo-maker` | affiliate link to Shopify's generic store builder; no logo maker |
+| `socratic-by-google` | redirects to Google Lens |
+| `spoke` | joined Slack in July 2024; no longer standalone |
+| `synthmind-ai` | Framer "Site Not Found" |
+| `thyself` | site says it is shutting down on 30 April 2026 |
+| `trollyai` | site is branded NetusAI throughout |
+| `wondershare-virtulook` | discontinued 14 January 2025 per its site |
+| `zoom-ai-companion` | stored website points at ZoomMate, a different product |
+
+## Website unreachable (6)
+
+- `anon` — https://www.anon.com
+- `brandscript-generator` — https://www.brandscriptgenerator.com/
+- `homeworkify` — https://homeworkify.im/
+- `kubiya` — https://www.kubiya.ai (likely a bot block; active product)
+- `libretto` — https://getlibretto.com
+- `mirror-ai` — https://www.mirror-ai.com/
+
+Also unreadable but kept: `swyft-ai`, `journeai`, `myaskai`, `picsart`, `microsoft-designer`, `teachable-machine` (site text too thin; Picsart and Microsoft Designer are obviously alive).
+
+Pricing reconciled for this pass: 43 rows (cumulative 439).
+
+---
+
+# Where the thin-content work stands after eleven passes
+
+Every tool page under 200 characters that had a reachable website and was not on this list has been attempted. What is left under 200 characters (737 rows) breaks down as:
+
+| group | rows | what to do |
+|---|---|---|
+| Listed above as hijacked, renamed, acquired, shut down, unreachable or "kept but unreadable" | 414 | product decision: remove, keep with a notice, or re-check by hand |
+| Attempted, but the site was bot-blocked, empty or too thin to write from | 308 | a second fetch with a real browser would recover a share of the bot-blocked ones; the rest need a human |
+| No website on file | 15 | fix the row or remove |
+
+Nothing in this file has been deleted or unpublished.
