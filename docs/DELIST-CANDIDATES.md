@@ -460,3 +460,57 @@ Pricing reconciled for this pass: 60 rows (cumulative 245).
 Also unreadable but kept: `sapien`, `danelfin`, `dante-ai`, `twinkle-steps`, `wishnest-store` (bot checks), `typingmind`, `gnomi-app`, `video-magic`, `ai-social-media-post-generator-or-semrush` (site text too thin to write from).
 
 Pricing reconciled for this pass: 48 rows (cumulative 293).
+
+---
+
+# Ninth pass — 18 September 2026 (161–171 character band)
+
+## Remove first (3)
+
+| slug | what the site is now |
+|---|---|
+| `snapdress` | site is now an AI erotica story generator (RedQuill) |
+| `infer` | domain now serves a Vietnamese football livestream site |
+| `monalabs` | "Under Construction" placeholder; stored tagline is cookie-consent boilerplate |
+
+## Renamed, acquired, pivoted, or shut down per the site (22)
+
+| slug | note |
+|---|---|
+| `adaptify-listicle-writer` | site describes a different Adaptify product |
+| `afforai` | now branded Logically |
+| `aisera` | acquired by Automation Anywhere |
+| `ayfie` | website returns 404 |
+| `bonitasoft` | site now presents Ofelia; Bonita is a sub-product |
+| `codeium` | site now shows Devin by Cognition (Windsurf was acquired) |
+| `genieio` | sunset on 31 August 2025; joining Doss |
+| `log10` | site describes Everest, a different product |
+| `magic-type-ai` | rebuilt as a private-beta visual-commerce platform |
+| `monocle` | now part of OuterSignal |
+| `nexa-sdk` | Nexa AI is now part of Qualcomm AI Hub |
+| `okara` | site describes a different product (an AI CMO) |
+| `orchids` | sunset on 18 July; team joined Figma |
+| `rossum-ai` | acquired by Coupa |
+| `rows-ai` | Rows joined Superhuman |
+| `teamsmart-ai` | site is a different product on AskAI.free |
+| `timeos` | now branded Timeless |
+| `vectorshift` | site describes a private-market intelligence platform, not the listed builder |
+| `visenze` | ViSenze joins Rezolve Ai |
+| `windsurf` | site now shows Devin by Cognition |
+| `zoho-social` | stored website points at the generic Zoho homepage |
+
+## Website unreachable (9)
+
+- `aporia` — https://www.aporia.com/
+- `glossai` — https://glossai.co
+- `ninjachat-ai` — https://ninjachat.ai/
+- `perigon` — https://www.goperigon.com
+- `phototagai` — https://www.phototag.ai/
+- `podclips` — https://www.podclips.pro/
+- `promptcompose` — https://promptcompose.ai/
+- `tokyo` — https://www.usetokyo.com/
+- `wondershare-presentory` — https://presentory.wondershare.com/
+
+Also unreadable but kept: `vidiq`, `mindpal` (bot checks), `suno-ai-bark` (GitHub fetch error), `helper`, `ragaai-inc`, `idesigns`, `b12io`, `beatovenai` (site text too thin or unrelated scrape).
+
+Pricing reconciled for this pass: 61 rows (cumulative 354).

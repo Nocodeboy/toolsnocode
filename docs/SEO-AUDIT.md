@@ -95,18 +95,21 @@ rewritten and live**, 17 null.
 Eighth pass (155–161 characters, 184 rows): 176 sites answered, **144
 rewritten and live**, 28 null.
 
-Cumulative after eight passes: **987 tool pages rewritten**, average
-description length 228 → 544 characters. Remaining under 200 characters:
-1,164. Same pipeline, ~10 minutes per 180-row batch; from pass seven the
+Ninth pass (161–171 characters, 184 rows): 175 sites answered, **135
+rewritten and live**, 32 null.
+
+Cumulative after nine passes: **1,122 tool pages rewritten**, average
+description length 228 → 587 characters. Remaining under 200 characters:
+1,029. Same pipeline, ~10 minutes per 180-row batch; from pass seven the
 writers run on a smaller model with a stricter prompt (null when the site
 is blocked or empty, pricing evidence must be a literal quote) and a
 manual pass over every number and proper noun before applying. The passes
-also surfaced 94 listings whose product has been renamed, acquired or
-shut down, 7 hijacked domains, 2 stored taglines that are gambling spam
-and one listing that now links to adult content — see
+also surfaced 116 listings whose product has been renamed, acquired or
+shut down, 8 hijacked domains, 2 stored taglines that are gambling spam
+and 2 listings that now link to adult content — see
 [DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md).
 
-The same site fetch was used to reconcile the `pricing` field: **293 rows
+The same site fetch was used to reconcile the `pricing` field: **354 rows
 corrected** where the site contradicted the listed value with explicit
 evidence (backup table `tools_pricing_backup_20260917`). `freemium` had
 been the scraper's default for 59% of the directory; the corrections were
