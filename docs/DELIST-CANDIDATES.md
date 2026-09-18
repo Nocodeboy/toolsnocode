@@ -514,3 +514,44 @@ Pricing reconciled for this pass: 48 rows (cumulative 293).
 Also unreadable but kept: `vidiq`, `mindpal` (bot checks), `suno-ai-bark` (GitHub fetch error), `helper`, `ragaai-inc`, `idesigns`, `b12io`, `beatovenai` (site text too thin or unrelated scrape).
 
 Pricing reconciled for this pass: 61 rows (cumulative 354).
+
+---
+
+# Tenth pass — 18 September 2026 (171–183 character band)
+
+## Renamed, acquired, pivoted, or shut down per the site (17)
+
+| slug | note |
+|---|---|
+| `adversa` | stored tagline describes SecureClaw; site is Adversa's own unrelated platform |
+| `aithorseo` | site is Aithor's essay writer; no SEO product by that name |
+| `blackbox-ai` | site now describes an enterprise inference platform, not the coding agent listed |
+| `clockwise` | shutting down 27 March 2026; team joining Salesforce |
+| `codegen` | Codegen has joined ClickUp |
+| `codewhisperer` | renamed and merged into Amazon Q Developer |
+| `composer` | now Composer by SoFi |
+| `firstquadrant` | site says the product has been sunset |
+| `gradient-ai` | site describes a different product (Hyperagent) |
+| `gridspace` | site is branded Guava, a different product |
+| `keyword-discovery` | AppSumo notice says the tool is inaccessible |
+| `narrato` | site now shows Typeface, a different company |
+| `nuance` | site says Nuance is now Microsoft |
+| `planck-data` | site says Planck is now part of another company |
+| `shopify-magic` | page is about Shopify Sidekick; the Magic name is gone |
+| `vertex-ai` | renamed Gemini Enterprise Agent Platform |
+| `worgit-ai` | Cloudflare 526 invalid certificate; site effectively down |
+
+## Website unreachable (8)
+
+- `blinq` — https://blinq.io (likely a bot block; active product)
+- `dappergpt` — https://dappergpt.com/
+- `echoreads` — https://echoreads.io
+- `geminigen-ai` — https://geminigen.ai/
+- `perfectgift` — https://perfectgift.ai/
+- `sheetai-app` — https://sheetai.app/
+- `vimerse-studio` — https://www.vimerse.app/
+- `writehuman` — https://writehuman.ai/ (likely a bot block; active product)
+
+Also unreadable but kept: `bigideasdb`, `freebeat`, `semai`, `tldr-this` (bot checks), `wellpin` (SSL error 525), `auto-gpt` (GitHub fetch error), `documind`, `eesel-app`, `storywise` (site text too thin).
+
+Pricing reconciled for this pass: 42 rows (cumulative 396).
