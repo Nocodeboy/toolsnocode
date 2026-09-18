@@ -273,3 +273,53 @@ Also flagged but kept: `thumbsnap` (Cloudflare 522), `vocode` and `museai` (fetc
 ## Pricing reconciled
 
 The pricing reconciliation suggested in the previous section is done for every row the writers could read: **107 rows changed** (backup in `tools_pricing_backup_20260917`), only where the site gave explicit evidence and the observed model differed from the listed one. The dominant corrections were `freemium → enterprise` (demo-only vendors) and `free → paid` (a free trial had been recorded as free). Rows where the site said nothing about pricing were left alone. Distribution after the pass: freemium 1,757 · free 810 · paid 474 · enterprise 56.
+
+---
+
+# Fifth pass — 18 September 2026 (134–143 character band)
+
+## Remove first (2)
+
+| slug | what the site is now |
+|---|---|
+| `pixite` | domain now serves an adult-content generator (PlayFlux AI), not the fashion tool listed |
+| `croydoncar` | a Beddington-to-Gatwick taxi landing page, not a software tool |
+
+## Renamed, acquired, pivoted, or shut down per the site (19)
+
+| slug | note |
+|---|---|
+| `ablo` | site is now an AI implementation agency; the fashion product is gone |
+| `adaptive` | Adaptive ML acquired by Datadog |
+| `ai-experiments` | website returns 404 |
+| `ascend-io` | site says Ascend is winding down operations |
+| `beforesunset` | site now presents "Unlock by BeforeSunset AI", a different planner |
+| `claimscore` | now Covalynt; ClaimScore is one product line |
+| `coda-ai` | Coda is now Superhuman Docs |
+| `cyclops-security` | now Check Point Software (Cyclops CAASM absorbed) |
+| `fusionos-ai` | site is now Fusion Agency, a services agency |
+| `galileo-ai` | renamed Stitch (`galileo` is already listed above) |
+| `kiloclaw` | Kilo acquired by Anaconda; page describes a different product |
+| `lychee` | tagline says "Formerly Lychee"; site is a security checkpoint |
+| `mess-arts-new-orleans` | a community arts programme in New Orleans, not a tool |
+| `recogni` | site now belongs to Tensordyne |
+| `rendernet` | renamed Affogato |
+| `resleeve` | site now describes an agent platform, not the fashion generator listed |
+| `skarbe` | site says operations wound down in April 2026 |
+| `well-extract` | site shows the parent Well product, not the extract tool |
+
+## Website unreachable (9)
+
+- `asktosell` — https://asktosell.com
+- `chatroi` — https://www.bryj.ai/chatroi/
+- `goreply` — https://goreply.com/
+- `radiant-security` — https://radiantsecurity.ai
+- `relevance-ai` — https://relevanceai.com/ (likely a bot block; Relevance AI is an active product)
+- `sanctum` — https://sanctum.ai/
+- `seoformulas` — https://www.seoformulas.com/
+- `viktor` — https://getviktor.com/
+- `writingmate` — https://writingmate.ai/
+
+Also unreadable but kept: `copilot`, `devrev`, `excel-copilot`, `quizlet-ai`, `mem`, `toma` (bot checks, sign-in or captcha pages), `microsoft-copilot`, `stratupai`, `roboost`, `ghost`, `briq`, `dream-decoder`, `aidaptive`, `agentscale-ai` (site text too thin to write from).
+
+Pricing reconciled for this pass: 33 rows (cumulative 140).

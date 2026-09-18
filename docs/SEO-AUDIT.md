@@ -83,15 +83,19 @@ Third pass (107–121 characters, 121 rows): 114 sites answered, **86
 rewritten and live**, 24 null. Fourth pass (121–134 characters, 184 rows):
 179 sites answered, **135 rewritten and live**, 38 null.
 
-Cumulative after four passes: **403 tool pages rewritten**, average
-description length 228 → 359 characters. Remaining under 200 characters:
-1,748; under 135: 472. Same pipeline, ~10 minutes per 180-row batch. The
-null rate falls as the band gets longer because the sites behind longer
-listings tend to have more to say. The passes also surfaced 35 listings
-whose product has been renamed, acquired or shut down and 2 more hijacked
-domains — see [DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md).
+Fifth pass (134–143 characters, 184 rows): 175 sites answered, **137
+rewritten and live**, 34 null.
 
-The same site fetch was used to reconcile the `pricing` field: **107 rows
+Cumulative after five passes: **540 tool pages rewritten**, average
+description length 228 → 402 characters. Remaining under 200 characters:
+1,611. Same pipeline, ~10 minutes per 180-row batch. The null rate falls
+as the band gets longer because the sites behind longer listings tend to
+have more to say. The passes also surfaced 54 listings whose product has
+been renamed, acquired or shut down, 2 hijacked domains and one listing
+that now links to adult content — see
+[DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md).
+
+The same site fetch was used to reconcile the `pricing` field: **140 rows
 corrected** where the site contradicted the listed value with explicit
 evidence (backup table `tools_pricing_backup_20260917`). `freemium` had
 been the scraper's default for 59% of the directory; the corrections were
