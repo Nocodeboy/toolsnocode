@@ -99,22 +99,26 @@ Ninth pass (161–171 characters, 184 rows): 175 sites answered, **135
 rewritten and live**, 32 null.
 
 Tenth pass (171–183 characters, 184 rows): 176 sites answered, **147
-rewritten and live**, 26 null.
+rewritten and live**, 26 null. Eleventh pass (183–199 characters, 180
+rows): 174 sites answered, **145 rewritten and live**, 24 null.
 
-Cumulative after ten passes: **1,269 tool pages rewritten**, average
-description length 228 → 630 characters. Remaining under 200 characters:
-882, of which 180 still have a reachable website and are not on the delist
-list; the rest are delist candidates or rows with no website. Same
-pipeline, ~10 minutes per 180-row batch; from pass seven the writers run
-on a smaller model with a stricter prompt (null when the site is blocked
-or empty, pricing evidence must be a literal quote) and a manual pass over
+**Result after eleven passes: 1,414 tool pages rewritten**, average
+description length 228 → 672 characters, and 2,361 of 3,098 tools (76%)
+now carry a description of 200 characters or more, up from 31% on 16
+September. The pass set is exhausted: every page under 200 characters
+with a reachable website has been attempted. The 737 still under 200 are
+414 delist candidates, 308 whose site was bot-blocked or too thin to write
+from, and 15 with no website on file — see the closing section of
+[DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md). Same pipeline throughout,
+~10 minutes per 180-row batch; from pass seven the writers ran on a
+smaller model with a stricter prompt (null when the site is blocked or
+empty, pricing evidence must be a literal quote) and a manual pass over
 every number and proper noun before applying. The passes also surfaced
-133 listings whose product has been renamed, acquired or shut down, 8
+152 listings whose product has been renamed, acquired or shut down, 8
 hijacked domains, 2 stored taglines that are gambling spam and 2 listings
-that now link to adult content — see
-[DELIST-CANDIDATES.md](./DELIST-CANDIDATES.md).
+that now link to adult content.
 
-The same site fetch was used to reconcile the `pricing` field: **396 rows
+The same site fetch was used to reconcile the `pricing` field: **439 rows
 corrected** where the site contradicted the listed value with explicit
 evidence (backup table `tools_pricing_backup_20260917`). `freemium` had
 been the scraper's default for 59% of the directory; the corrections were
