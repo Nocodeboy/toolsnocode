@@ -116,7 +116,11 @@ empty, pricing evidence must be a literal quote) and a manual pass over
 every number and proper noun before applying. The passes also surfaced
 152 listings whose product has been renamed, acquired or shut down, 8
 hijacked domains, 2 stored taglines that are gambling spam and 2 listings
-that now link to adult content.
+that now link to adult content. **On 18 September 207 of them were
+delisted** (hijacked, renamed, acquired, shut down, not a tool); the
+listed directory is now 2,891 tools, 82% of them with a description of 200
+characters or more. The "unreachable" group was re-fetched and held back:
+27 answer today and most of the rest fail only at this environment's proxy.
 
 The same site fetch was used to reconcile the `pricing` field: **439 rows
 corrected** where the site contradicted the listed value with explicit

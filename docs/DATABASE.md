@@ -103,3 +103,18 @@ supabase db push
 ```
 
 Las migraciones se registran en `supabase_migrations.schema_migrations`. Si el archivo y la tabla divergen (p. ej. un fix aplicado solo vía MCP), se resuelve añadiendo el archivo al repo y re-pusheando — Supabase detecta la versión ya aplicada y la salta.
+
+## Delisting a tool
+
+`tools.delisted_at` (timestamptz) and `tools.delist_reason` (text) mark a
+listing as withdrawn without deleting the row. The SELECT policy on `tools`
+is `delisted_at IS NULL OR user_id = auth.uid()`, so anonymous and
+signed-in readers never see a delisted row while its owner still can. That
+single rule covers the SPA, PostgREST, `category_tool_counts` (security
+invoker) and the Vercel head-injection layer, which 404s on a missing row.
+Two code paths use the service role and filter by hand: the sitemap edge
+function and the digest edge function's link check; `weekly_digest_brief()`
+filters inside its SQL. Delist with
+`UPDATE tools SET delisted_at = now(), delist_reason = '…' WHERE slug = '…'`;
+relist by setting `delisted_at` to NULL. The first delisting pass (207 rows,
+18 September 2026) is backed up in `tools_delisted_backup_20260918`.

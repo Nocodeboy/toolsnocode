@@ -39,14 +39,17 @@ Deno.serve(async (req: Request) => {
      *     `.data ?? []` sin mirar `.error`, y esas tres secciones desaparecían
      *     en silencio. De ahí el `throw` y el uso de `created_at`.
      */
-    async function fetchAll(table: string, dateColumn: string) {
+    async function fetchAll(table: string, dateColumn: string, onlyListed = false) {
       const PAGE = 1000;
       const rows: Array<{ slug: string; lastmod: string | null }> = [];
 
       for (let from = 0; ; from += PAGE) {
-        const { data, error } = await supabase
+        let query = supabase
           .from(table)
-          .select(`slug, ${dateColumn}`)
+          .select(`slug, ${dateColumn}`);
+        // Service role bypasses RLS, so delisted tools are excluded here by hand.
+        if (onlyListed) query = query.is("delisted_at", null);
+        const { data, error } = await query
           .order(dateColumn, { ascending: false })
           .order("slug", { ascending: true })
           .range(from, from + PAGE - 1);
@@ -78,7 +81,7 @@ Deno.serve(async (req: Request) => {
      * Cuando tengan contenido real, se vuelven a añadir aquí.
      */
     const [tools, projects, news, categories] = await Promise.all([
-      fetchAll("tools", "updated_at"),
+      fetchAll("tools", "updated_at", true),
       fetchAll("projects", "created_at"),
       fetchAll("news", "published_at"),
       fetchAll("categories", "created_at"),

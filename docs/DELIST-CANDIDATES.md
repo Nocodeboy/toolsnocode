@@ -1,6 +1,6 @@
 # Delist candidates — 17 September 2026
 
-Found while rewriting the 376 thinnest tool pages. Nothing here has been deleted or unpublished; that is a product decision. Each row links from the directory to the site described.
+Found while rewriting the thinnest tool pages. See the *Applied* section at the end for what was delisted on 18 September and what was not. Each row links from the directory to the site described.
 
 ## Domain hijacked, parked, or serving a different product (17)
 
@@ -608,4 +608,39 @@ Every tool page under 200 characters that had a reachable website and was not on
 | Attempted, but the site was bot-blocked, empty or too thin to write from | 308 | a second fetch with a real browser would recover a share of the bot-blocked ones; the rest need a human |
 | No website on file | 15 | fix the row or remove |
 
-Nothing in this file has been deleted or unpublished.
+See the next section for what was applied.
+
+
+---
+
+# Applied — 18 September 2026
+
+**207 listings delisted** (`tools.delisted_at` set, reason in
+`tools.delist_reason`, full rows copied to `tools_delisted_backup_20260918`).
+The set is every row above under *hijacked / remove first*, *renamed,
+acquired, pivoted or shut down*, *product shut down* and *not a software
+tool*. Public reads are cut off by the row-level policy, so listing pages,
+category counts, search, the sitemap and the head-injection layer all drop
+them at once and `/tools/<slug>` answers 404. Nothing was deleted; to
+relist a row set `delisted_at` back to NULL.
+
+Three of the delisted rows had an owner account (`mess-arts-new-orleans`,
+`croydoncar`, `branded-rental-cars`); all three are non-software
+submissions. Owners still see their own row when signed in.
+
+## The "website unreachable" group was NOT delisted
+
+The 180 rows listed as unreachable were fetched again on 18 September
+from this environment. The result says the group is not evidence of a dead
+product:
+
+| outcome | rows |
+|---|---|
+| answers normally today | 27 |
+| fails only at this environment's outbound proxy (502 on CONNECT), which also fails for live products such as PlayHT, OpenPipe and Guidde | 78 |
+| TLS handshake error through the proxy | 61 |
+| other (redirect loops, HTTP/2 resets, empty body) | 14 |
+
+Only a fetch from a normal network, or a look by hand, can settle these.
+The 27 that answer today should simply be re-run through the rewrite
+pipeline. Alive today: `anon`, `axyon-ai`, `brandscript-generator`, `dappergpt`, `easygen`, `echoreads`, `enzzo`, `equally-ai`, `flint`, `hume-ai`, `ninjachat-ai`, `perigon`, `phototagai`, `picso`, `pixela-ai`, `podclips`, `relevance-ai`, `roamaround`, `sheetai-app`, `topcreator`, `twitterbio`, `unriddle`, `vidflux-ai`, `viktor`, `vimerse-studio`, `writehuman`, `writingmate`.

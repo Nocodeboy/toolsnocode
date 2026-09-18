@@ -68,7 +68,9 @@ Deno.serve(async (req) => {
   for (const [kind, table] of [['tools', 'tools'], ['categories', 'categories'], ['news', 'news']] as const) {
     const wanted = bySlug(kind);
     if (wanted.length === 0) continue;
-    const { data } = await supabase.from(table).select('slug').in('slug', wanted);
+    let q = supabase.from(table).select('slug').in('slug', wanted);
+    if (table === 'tools') q = q.is('delisted_at', null); // service role bypasses RLS
+    const { data } = await q;
     const found = new Set((data ?? []).map((r) => r.slug as string));
     for (const s of wanted) if (!found.has(s)) problems.push(`link to /${kind}/${s} does not exist`);
   }
