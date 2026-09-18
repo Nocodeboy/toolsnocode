@@ -412,3 +412,51 @@ Pricing reconciled for this pass: 45 rows (cumulative 185).
 Also unreadable but kept: `exa-websets` (Vercel bot check), `viralmoment`, `bubble` (site text too thin to write from; Bubble is obviously alive).
 
 Pricing reconciled for this pass: 60 rows (cumulative 245).
+
+---
+
+# Eighth pass — 18 September 2026 (155–161 character band)
+
+## Remove first (2)
+
+| slug | what the site is now |
+|---|---|
+| `impulse-ai` | domain now serves a Vietnamese football-betting site |
+| `customwritings` | a human essay-writing service that advertises itself as AI-free; not a tool |
+
+## Renamed, acquired, pivoted, or offline per the site (17)
+
+| slug | note |
+|---|---|
+| `agentsforce` | site describes a product called Minded |
+| `cades` | site names the product Fenado AI |
+| `chaindesk` | now branded Askli |
+| `fathom` | site banner says Fathom is now part of Superhuman |
+| `fiftyone` | site markets a different Voxel51 product; FiftyOne not mentioned |
+| `hydra` | page describes Gramosynth by Rightsify |
+| `instance` | site is Mimo, a coding-lessons platform |
+| `loris` | now under Contentsquare |
+| `marketalerts-ai` | site is a B2B fintech services company, not the consumer alerts tool |
+| `mavarick-ai` | site describes an industrial robotics platform, not the listed product |
+| `mojju` | website returns 404 |
+| `moveworks` | acquired by ServiceNow |
+| `mypeas-ai` | now branded TrackImpact |
+| `parcha` | site says Parcha is now Grep AI; original product retired |
+| `prompt-security` | now "from SentinelOne" |
+| `stack-ai` | acquired by Asana |
+| `tabnine` | acquired by Tricentis |
+
+## Website unreachable (8)
+
+- `emotionsense-pro` — https://www.emotionsense.pro/
+- `enzzo` — https://www.enzzo.ai
+- `ganai` — https://www.gan.ai/
+- `handit-ai` — https://www.handit.ai/
+- `photosonic-ai` — https://photosonic.writesonic.com/
+- `quilt` — https://quilt.app
+- `robin-ai` — https://www.robinai.com/ (likely a bot block; active product)
+- `travelnaut` — https://travelnaut.com/
+
+Also unreadable but kept: `sapien`, `danelfin`, `dante-ai`, `twinkle-steps`, `wishnest-store` (bot checks), `typingmind`, `gnomi-app`, `video-magic`, `ai-social-media-post-generator-or-semrush` (site text too thin to write from).
+
+Pricing reconciled for this pass: 48 rows (cumulative 293).
