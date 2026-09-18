@@ -64,6 +64,13 @@ tiempo de ejecución (las mismas variables que usa la build).
 
 Ver [SEO-AUDIT.md](./SEO-AUDIT.md) para el porqué.
 
+### RSS feed
+
+`/feed.xml` is rewritten to the edge function `api/feed.ts`, which reads the
+50 latest `news` rows with the anon key and answers RSS 2.0, cached 10 min
+at the edge. Nothing to configure beyond `VITE_SUPABASE_ANON_KEY`, which the
+SEO layer already needs.
+
 ## Backend — Supabase
 
 ### Migraciones SQL
