@@ -260,12 +260,12 @@ A sample of 35 sitemap URLs across every page shape returns 200, with the
 SEO layer injecting on every route that has one and no fallbacks. A missing
 tool, news, category, pricing variant or project answers a real 404.
 
-### Open, and not a code problem
+### Editor's picks, filled on 19 September
 
-The homepage has one boosted listing and **zero editor's picks**: no row in
-the directory carries `is_featured` without also being boosted. With the
-crawler events excluded there is also not enough behaviour to fill a
-Trending row. So the only curation the homepage shows today is one paid
-placement and "Recently added". Picking editor's picks is an editorial call,
-not something to derive from the data, and it is the cheapest remaining
-improvement to the page with the most inbound links.
+The homepage had one boosted listing and zero editor's picks, so the only
+curation it showed was a paid placement and "Recently added". Twelve picks
+are now set against a written standard (see DATABASE.md): complete listing,
+pricing verified against the tool's own site, live under the name we list,
+correct category, one per category, and no affiliate link in the outbound
+URL. They rotate weekly through the six homepage slots, which also gives the
+most-linked page on the site a reason to change every Monday.

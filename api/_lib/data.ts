@@ -86,7 +86,7 @@ const CARD = 'select=name,slug,tagline,pricing';
 export const getHomeData = async () => {
   const [boosted, picks, recent, trending, total, categories] = await Promise.all([
     rest<ToolCard>(`tools?${CARD}&is_boosted=eq.true&order=boost_expires_at.desc&limit=6`),
-    rest<ToolCard>(`tools?${CARD}&is_featured=eq.true&is_boosted=eq.false&order=created_at.desc&limit=6`),
+    rest<ToolCard>(`tools?${CARD}&is_featured=eq.true&is_boosted=eq.false&order=slug&limit=24`),
     rest<ToolCard>(`tools?${CARD}&order=created_at.desc&limit=8`),
     rest<ToolCard>(`tools?${CARD}&trending_score=gt.0&order=trending_score.desc&limit=6`),
     count('tools?select=slug'),

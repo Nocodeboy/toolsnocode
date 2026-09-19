@@ -4,6 +4,7 @@ import type { ProjectRow } from './data';
 import type { ToolCard } from './data';
 import { CATEGORY_COPY } from '../../src/data/categoryCopy';
 import { INDEX_MIN, PRICING_LABEL, PRICING_SLUGS, isPricingSlug, pricingCopy, type PricingSlug } from '../../src/data/pricingPages';
+import { rotateWeekly } from '../../src/data/featured';
 
 /**
  * El `<head>` correcto para cada ruta, escrito en el HTML antes de servirlo.
@@ -411,7 +412,8 @@ function homeMeta(d: Awaited<ReturnType<typeof getHomeData>>): PageMeta {
   const description = `Compare ${total} AI and no-code tools across ${d.categories.length} categories, with pricing checked against each tool's own site. Boosted picks, editor's picks and what builders are opening this week.`;
   const sections: Array<[string, ToolCard[]]> = [
     ['Boosted this week', d.boosted],
-    ["Editor's picks", d.picks],
+    // La misma rotación semanal que aplica la portada en el cliente.
+    ["Editor's picks", rotateWeekly(d.picks, 6)],
     // Mismo mínimo que la portada: una sola tarjeta no es una sección.
     ['Trending', d.trending.length >= 3 ? d.trending : []],
     ['Recently added', d.recent],
@@ -428,7 +430,7 @@ function homeMeta(d: Awaited<ReturnType<typeof getHomeData>>): PageMeta {
       name: `${SITE_NAME}: AI & No-Code Tools Directory`,
       url: `${BASE_URL}/`,
       description: clip(description, 160),
-      mainEntity: itemList([...d.boosted, ...d.picks, ...(d.trending.length >= 3 ? d.trending : [])].slice(0, 12)),
+      mainEntity: itemList([...d.boosted, ...rotateWeekly(d.picks, 6), ...(d.trending.length >= 3 ? d.trending : [])].slice(0, 12)),
     },
     body: `<main>
 <h1>Discover the best AI &amp; no-code tools</h1>
