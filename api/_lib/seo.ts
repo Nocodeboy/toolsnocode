@@ -1,7 +1,8 @@
 import type { CategoryRow, NewsRow, ToolRow } from './data';
-import { getCategoriesWithCounts, getCategory, getCategoryToolCount, getCategoryTopTools, getHomeData, getNews, getNewsList, getTool, getToolsHubData } from './data';
+import { getCategoriesWithCounts, getCategory, getCategoryPricingCounts, getCategoryToolCount, getCategoryTopTools, getHomeData, getNews, getNewsList, getTool, getToolsHubData } from './data';
 import type { ToolCard } from './data';
 import { CATEGORY_COPY } from '../../src/data/categoryCopy';
+import { INDEX_MIN, PRICING_LABEL, PRICING_SLUGS, isPricingSlug, pricingCopy, type PricingSlug } from '../../src/data/pricingPages';
 
 /**
  * El `<head>` correcto para cada ruta, escrito en el HTML antes de servirlo.
@@ -52,12 +53,22 @@ export async function describe(pathname: string): Promise<PageMeta | null> {
   const newsSlug = m(/^\/news\/([a-z0-9-]+)\/?$/);
   if (newsSlug) return newsMeta(newsSlug, await getNews(newsSlug));
 
+  const catPricing = pathname.match(/^\/categories\/([a-z0-9-]+)\/([a-z]+)\/?$/);
+  if (catPricing) {
+    const [, cslug, pricing] = catPricing;
+    if (!isPricingSlug(pricing)) return notFound(pathname);
+    const cat = await getCategory(cslug);
+    if (!cat) return notFound(pathname);
+    const [count, top, variants] = await Promise.all([getCategoryToolCount(cat.id, pricing), getCategoryTopTools(cat.id, 12, pricing), getCategoryPricingCounts(cat.id)]);
+    return categoryMeta(cat, count, top, variants, pricing);
+  }
+
   const catSlug = m(/^\/categories\/([a-z0-9-]+)\/?$/);
   if (catSlug) {
     const cat = await getCategory(catSlug);
     if (!cat) return notFound(`/categories/${catSlug}`);
-    const [count, top] = await Promise.all([getCategoryToolCount(cat.id), getCategoryTopTools(cat.id)]);
-    return categoryMeta(cat, count, top);
+    const [count, top, variants] = await Promise.all([getCategoryToolCount(cat.id), getCategoryTopTools(cat.id), getCategoryPricingCounts(cat.id)]);
+    return categoryMeta(cat, count, top, variants);
   }
 
   if (/^\/categories\/?$/.test(pathname)) return categoriesIndexMeta(await getCategoriesWithCounts());
@@ -218,25 +229,43 @@ ${items.map((n) => `<li><a href="/news/${esc(n.slug)}">${esc(n.title)}</a> — <
   };
 }
 
-function categoryMeta(c: CategoryRow, count: number, top: { name: string; slug: string; tagline: string | null }[]): PageMeta {
+function categoryMeta(
+  c: CategoryRow,
+  count: number,
+  top: { name: string; slug: string; tagline: string | null }[],
+  variants: Record<string, number>,
+  pricing?: PricingSlug,
+): PageMeta {
   // El mismo copy que pinta `CategoryPage`: es lo único que distingue esta
   // página de un listado filtrado, y un crawler sin JS tiene que leerlo.
-  const copy = CATEGORY_COPY[c.slug];
-  const heading = copy?.heading ?? `${c.name} Tools`;
-  const description = clip(copy?.metaDescription ?? plain(c.description) ?? `Compare ${count} ${c.name.toLowerCase()} tools in the ${SITE_NAME} directory.`, 160);
-  const intro = copy?.intro.split('\n\n').map((x) => x.trim()).filter(Boolean) ?? [];
+  const authored = CATEGORY_COPY[c.slug];
+  const copy = pricing
+    ? pricingCopy(pricing, c.name, count)
+    : {
+        heading: authored?.heading ?? `${c.name} Tools`,
+        metaTitle: authored?.metaTitle ?? `${c.name} Tools (${count})`,
+        metaDescription: authored?.metaDescription ?? plain(c.description) ?? `Compare ${count} ${c.name.toLowerCase()} tools in the ${SITE_NAME} directory.`,
+        intro: authored?.intro ?? '',
+      };
+  const path = pricing ? `/categories/${c.slug}/${pricing}` : `/categories/${c.slug}`;
+  const description = clip(copy.metaDescription, 160);
+  const intro = copy.intro.split('\n\n').map((x) => x.trim()).filter(Boolean);
+  const pills = PRICING_SLUGS.filter((p) => (variants[p] ?? 0) > 0)
+    .map((p) => `<a href="/categories/${esc(c.slug)}/${p}">${PRICING_LABEL[p]} (${variants[p]})</a>`);
   return {
-    title: copy?.metaTitle ?? `${c.name} Tools (${count})`,
+    title: copy.metaTitle,
     description,
-    canonical: `${BASE_URL}/categories/${c.slug}`,
+    canonical: `${BASE_URL}${path}`,
     image: `${BASE_URL}/api/og?kind=category&slug=${encodeURIComponent(c.slug)}`,
     type: 'website',
+    // Una variante con pocas herramientas funciona pero no se indexa.
+    noindex: pricing !== undefined && count < INDEX_MIN,
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
-        name: heading,
-        url: `${BASE_URL}/categories/${c.slug}`,
+        name: copy.heading,
+        url: `${BASE_URL}${path}`,
         description,
         mainEntity: {
           '@type': 'ItemList',
@@ -251,13 +280,15 @@ function categoryMeta(c: CategoryRow, count: number, top: { name: string; slug: 
           { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL },
           { '@type': 'ListItem', position: 2, name: 'Categories', item: `${BASE_URL}/categories` },
           { '@type': 'ListItem', position: 3, name: c.name, item: `${BASE_URL}/categories/${c.slug}` },
+          ...(pricing ? [{ '@type': 'ListItem', position: 4, name: PRICING_LABEL[pricing], item: `${BASE_URL}${path}` }] : []),
         ],
       },
     ],
     body: `<main>
-<h1>${esc(heading)}</h1>
+<h1>${esc(copy.heading)}</h1>
 ${intro.map((x) => `<p>${esc(x)}</p>`).join('\n') || `<p>${esc(description)}</p>`}
-<h2>${count} tools in ${esc(c.name)}</h2>
+<p>By pricing: <a href="/categories/${esc(c.slug)}">All</a>${pills.length ? ' · ' + pills.join(' · ') : ''}</p>
+<h2>${count} ${pricing ? `${pricing} ` : ''}tools in ${esc(c.name)}</h2>
 <ul>${top.map((t) => `<li><a href="/tools/${esc(t.slug)}">${esc(t.name)}</a>${t.tagline ? ` — ${esc(clip(plain(t.tagline), 120))}` : ''}</li>`).join('')}</ul>
 <p><a href="/categories">All categories</a></p>
 </main>`,

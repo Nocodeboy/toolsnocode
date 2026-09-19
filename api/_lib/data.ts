@@ -56,12 +56,19 @@ export const getNews = (slug: string) =>
 export const getCategory = (slug: string) =>
   one<CategoryRow>(`categories?select=id,name,slug,description&slug=eq.${encodeURIComponent(slug)}&limit=1`);
 
-export const getCategoryToolCount = async (categoryId: string) =>
-  (await one<{ tool_count: number }>(`category_tool_counts?select=tool_count&category_id=eq.${categoryId}&limit=1`))?.tool_count ?? 0;
+export const getCategoryToolCount = async (categoryId: string, pricing?: string) =>
+  pricing
+    ? (await one<{ tool_count: number }>(`category_pricing_counts?select=tool_count&category_id=eq.${categoryId}&pricing=eq.${pricing}&limit=1`))?.tool_count ?? 0
+    : (await one<{ tool_count: number }>(`category_tool_counts?select=tool_count&category_id=eq.${categoryId}&limit=1`))?.tool_count ?? 0;
 
-export const getCategoryTopTools = (categoryId: string, n = 12) =>
+export const getCategoryPricingCounts = async (categoryId: string) => {
+  const rows = await rest<{ pricing: string; tool_count: number }>(`category_pricing_counts?select=pricing,tool_count&category_id=eq.${categoryId}`);
+  return Object.fromEntries(rows.map((r) => [r.pricing, r.tool_count])) as Record<string, number>;
+};
+
+export const getCategoryTopTools = (categoryId: string, n = 12, pricing?: string) =>
   rest<{ name: string; slug: string; tagline: string | null }>(
-    `tools?select=name,slug,tagline&category_id=eq.${categoryId}&order=trending_score.desc,created_at.desc&limit=${n}`);
+    `tools?select=name,slug,tagline&category_id=eq.${categoryId}${pricing ? `&pricing=eq.${pricing}` : ''}&order=trending_score.desc,created_at.desc&limit=${n}`);
 
 export const getCategoriesWithCounts = async () => {
   const [cats, counts] = await Promise.all([

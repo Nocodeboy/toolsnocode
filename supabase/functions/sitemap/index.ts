@@ -139,6 +139,18 @@ Deno.serve(async (req: Request) => {
       for (const category of categories) {
         xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(category.slug)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
       }
+
+      // Variantes por modelo de precio: solo las que tienen lista suficiente
+      // para ser una página y no un filtro vacío (el mismo umbral que pone la
+      // página en noindex por debajo).
+      const { data: variants, error: variantsError } = await supabase
+        .from("category_pricing_counts")
+        .select("slug, pricing, tool_count")
+        .gte("tool_count", 8);
+      if (variantsError) throw new Error(`sitemap: category_pricing_counts -> ${variantsError.message}`);
+      for (const v of (variants ?? []) as Array<{ slug: string; pricing: string; tool_count: number }>) {
+        xml += `\n  <url><loc>${BASE_URL}/categories/${xmlEscape(v.slug)}/${xmlEscape(v.pricing)}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`;
+      }
     }
 
     for (const tool of tools) {
