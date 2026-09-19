@@ -269,3 +269,33 @@ pricing verified against the tool's own site, live under the name we list,
 correct category, one per category, and no affiliate link in the outbound
 URL. They rotate weekly through the six homepage slots, which also gives the
 most-linked page on the site a reason to change every Monday.
+
+## 10. What production was actually reporting (19 September)
+
+The `client_errors` table had 56 rows and they pointed at two real problems,
+not at the pages the audit had been looking at.
+
+**Every error came from the previous site's URLs.** `/ai-tools/<name>/r/<id>`
+is the shape the directory used before this one, and those links are still
+out there. The SPA answered them with **200** and a 404 page: a soft 404,
+repeated for every stale link and every typo, which tells a search engine
+the site has an unlimited number of pages. Now any path that is not an
+application route answers a real 404, and a legacy URL whose name still
+matches a listed tool answers 301 to it — `/ai-tools/Canva/r/rec…` →
+`/tools/canva`, `/ai-tools/VEED.IO` → `/tools/veedio`. The route allowlist
+lives in `api/_lib/seo.ts`; every one of the 24 real route shapes was
+re-tested in production after the change.
+
+**A deploy broke open tabs.** Hashed chunks disappear when a new build
+ships, so a tab opened before it throws on its next lazy route: 34 of the 56
+errors were "Failed to fetch dynamically imported module". The other 18,
+logged as an invalid hook call and a `removeChild` failure, are the same
+thing from the other side — a stale chunk beside a fresh one leaves two
+copies of React. Lazy routes now reload once, with a `sessionStorage` lock
+so a real failure still reaches the error boundary, and `main.tsx` clears
+the server-injected `#root` in one assignment rather than letting React
+remove those nodes individually.
+
+Still open and not a code problem: one claim request has been pending review
+since it was filed, and one Stripe incident (`no_user_with_customer_email`)
+is unresolved from 16 September.
