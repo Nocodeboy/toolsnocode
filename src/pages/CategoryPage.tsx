@@ -7,6 +7,7 @@ import type { Category, Tool } from '../types';
 import ToolCard from '../components/ui/ToolCard';
 import NotFoundPage from './NotFoundPage';
 import { CATEGORY_COPY } from '../data/categoryCopy';
+import { INDEX_MIN, PRICING_LABEL, PRICING_SLUGS, isPricingSlug, pricingCopy, type PricingSlug } from '../data/pricingPages';
 import { BASE_URL, useSEO } from '../hooks/useSEO';
 
 const PAGE_SIZE = 24;
@@ -31,7 +32,11 @@ const sortOptions = [
  * de sacar del sitemap.
  */
 export default function CategoryPage() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, pricing } = useParams<{ slug: string; pricing?: string }>();
+  // `/categories/marketing/free`: una variante por modelo de precio. Un valor
+  // que no sea uno de los cuatro es un 404, no una página vacía.
+  const pricingKey: PricingSlug | null = isPricingSlug(pricing) ? pricing : null;
+  const badPricing = pricing !== undefined && pricingKey === null;
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
@@ -44,6 +49,7 @@ export default function CategoryPage() {
   const [hasMore, setHasMore] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [page, setPage] = useState(0);
+  const [pricingCounts, setPricingCounts] = useState<Partial<Record<PricingSlug, number>>>({});
 
   const sortBy = searchParams.get('sort') === 'newest' ? 'newest' : 'trending';
 
@@ -51,6 +57,7 @@ export default function CategoryPage() {
   // ni sin descripción: el copy editorial es lo deseable, no lo imprescindible.
   const copy = useMemo(() => {
     if (!slug) return null;
+    if (pricingKey) return category ? pricingCopy(pricingKey, category.name, total) : null;
     const authored = CATEGORY_COPY[slug];
     if (authored) return authored;
     if (!category) return null;
@@ -62,7 +69,7 @@ export default function CategoryPage() {
         `Browse and compare ${category.name.toLowerCase()} tools in the ToolsNoCode directory.`,
       intro: category.description || '',
     };
-  }, [slug, category]);
+  }, [slug, category, pricingKey, total]);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,10 +112,11 @@ export default function CategoryPage() {
 
     async function loadTools() {
       setLoading(true);
-      const query = supabase
+      let query = supabase
         .from('tools')
         .select('*, category:categories(*)', { count: 'exact' })
         .eq('category_id', category!.id);
+      if (pricingKey) query = query.eq('pricing', pricingKey);
 
       // El boost no se ancla arriba en "Trending" por el mismo motivo que en
       // /tools: si lo comprado sale primero, la señal deja de valer.
@@ -128,7 +136,7 @@ export default function CategoryPage() {
 
     loadTools();
     return () => { cancelled = true; };
-  }, [category, sortBy]);
+  }, [category, sortBy, pricingKey]);
 
   useEffect(() => {
     if (!category) return;
@@ -141,7 +149,20 @@ export default function CategoryPage() {
       .then(({ data }) => { if (data) setSiblings(data); });
   }, [category]);
 
-  const path = `/categories/${slug}`;
+  useEffect(() => {
+    if (!category) return;
+    supabase
+      .from('category_pricing_counts')
+      .select('pricing, tool_count')
+      .eq('category_id', category.id)
+      .then(({ data }) => {
+        const next: Partial<Record<PricingSlug, number>> = {};
+        for (const row of data ?? []) if (isPricingSlug(row.pricing)) next[row.pricing] = row.tool_count;
+        setPricingCounts(next);
+      });
+  }, [category]);
+
+  const path = pricingKey ? `/categories/${slug}/${pricingKey}` : `/categories/${slug}`;
 
   const jsonLd = useMemo(() => {
     if (!category || !copy) return undefined;
@@ -173,11 +194,12 @@ export default function CategoryPage() {
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL },
           { '@type': 'ListItem', position: 2, name: 'Categories', item: `${BASE_URL}/categories` },
-          { '@type': 'ListItem', position: 3, name: category.name, item: `${BASE_URL}${path}` },
+          { '@type': 'ListItem', position: 3, name: category.name, item: `${BASE_URL}/categories/${slug}` },
+          ...(pricingKey ? [{ '@type': 'ListItem', position: 4, name: PRICING_LABEL[pricingKey], item: `${BASE_URL}${path}` }] : []),
         ],
       },
     ];
-  }, [category, copy, path, total, tools]);
+  }, [category, copy, path, total, tools, slug, pricingKey]);
 
   // `NotFoundPage` llama a su vez a `useSEO`, y los efectos de un hijo corren
   // antes que los del padre: sin este ternario la página 404 acabaría con el
@@ -189,7 +211,10 @@ export default function CategoryPage() {
       : copy?.metaDescription,
     // La canónica nunca lleva `?sort=`: son la misma página ordenada distinto.
     url: path,
-    noindex: notFound,
+    // Una variante con pocas herramientas funciona pero no se anuncia: publicar
+    // "Enterprise Tattoo Tools (2)" sería exactamente el tipo de página vacía
+    // que se acaba de sacar del índice.
+    noindex: notFound || (pricingKey !== null && total !== null && total < INDEX_MIN),
     jsonLd,
   });
 
@@ -199,10 +224,11 @@ export default function CategoryPage() {
     const next = page + 1;
     const from = next * PAGE_SIZE;
 
-    const query = supabase
+    let query = supabase
       .from('tools')
       .select('*, category:categories(*)')
       .eq('category_id', category.id);
+    if (pricingKey) query = query.eq('pricing', pricingKey);
 
     const ordered = sortBy === 'newest'
       ? query.order('is_boosted', { ascending: false }).order('created_at', { ascending: false })
@@ -220,7 +246,7 @@ export default function CategoryPage() {
     setLoadingMore(false);
   }
 
-  if (notFound) return <NotFoundPage />;
+  if (notFound || badPricing) return <NotFoundPage />;
 
   const paragraphs = copy?.intro ? copy.intro.split('\n\n').filter(Boolean) : [];
 
@@ -230,10 +256,18 @@ export default function CategoryPage() {
         <Link to="/" className="hover:text-surface-300 transition-colors">Home</Link>
         <ChevronRight className="w-3 h-3" />
         <Link to="/categories" className="hover:text-surface-300 transition-colors">Categories</Link>
-        {category && (
+        {category && !pricingKey && (
           <>
             <ChevronRight className="w-3 h-3" />
             <span className="text-surface-300">{category.name}</span>
+          </>
+        )}
+        {category && pricingKey && (
+          <>
+            <ChevronRight className="w-3 h-3" />
+            <Link to={`/categories/${slug}`} className="hover:text-surface-300 transition-colors">{category.name}</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-surface-300">{PRICING_LABEL[pricingKey]}</span>
           </>
         )}
       </nav>
@@ -249,10 +283,34 @@ export default function CategoryPage() {
         ))}
       </header>
 
+      {category && (
+        <nav aria-label="Pricing model" className="flex flex-wrap gap-2 mb-2">
+          <Link
+            to={`/categories/${slug}`}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              !pricingKey ? 'bg-brand-500/15 border-brand-500/40 text-brand-300' : 'border-surface-800 text-surface-400 hover:text-surface-200 hover:border-surface-700'
+            }`}
+          >
+            All
+          </Link>
+          {PRICING_SLUGS.filter((p) => (pricingCounts[p] ?? 0) > 0).map((p) => (
+            <Link
+              key={p}
+              to={`/categories/${slug}/${p}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                pricingKey === p ? 'bg-brand-500/15 border-brand-500/40 text-brand-300' : 'border-surface-800 text-surface-400 hover:text-surface-200 hover:border-surface-700'
+              }`}
+            >
+              {PRICING_LABEL[p]} <span className="text-surface-500">{pricingCounts[p]}</span>
+            </Link>
+          ))}
+        </nav>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pt-6 border-t border-surface-800">
         <p className="text-sm text-surface-500">
           {total !== null
-            ? <>{total} tool{total !== 1 ? 's' : ''} in {category?.name ?? 'this category'}</>
+            ? <>{total} {pricingKey ? `${pricingKey} ` : ''}tool{total !== 1 ? 's' : ''} in {category?.name ?? 'this category'}</>
             : 'Loading tools…'}
         </p>
 
@@ -303,7 +361,7 @@ export default function CategoryPage() {
         <div className="text-center py-16">
           <p className="text-surface-400 mb-2">Nothing listed here yet.</p>
           <p className="text-surface-500 text-sm mb-6">
-            This category is waiting for its first tool.
+            {pricingKey ? `No ${pricingKey} tools in this category so far.` : 'This category is waiting for its first tool.'}
           </p>
           <Link to="/tools" className="btn-secondary text-sm inline-flex">Browse all tools</Link>
         </div>

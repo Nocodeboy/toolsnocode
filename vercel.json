@@ -54,6 +54,16 @@
       ]
     },
     {
+      "source": "/categories/:slug([a-z0-9-]+)/:pricing(free|freemium|paid|enterprise)",
+      "destination": "/api/page?p=/categories/:slug/:pricing",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
       "source": "/categories/:slug([a-z0-9-]+)",
       "destination": "/api/page?p=/categories/:slug",
       "missing": [

@@ -68,6 +68,7 @@ export default function App() {
                 />
                 <Route path="categories" element={<CategoriesPage />} />
                 <Route path="categories/:slug" element={<CategoryPage />} />
+                <Route path="categories/:slug/:pricing" element={<CategoryPage />} />
                 <Route path="tools" element={<ToolsPage />} />
                 <Route path="tools/new" element={<ToolFormPage />} />
                 <Route path="tools/:slug/edit" element={<ToolFormPage />} />
