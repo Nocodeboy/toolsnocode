@@ -111,14 +111,21 @@ aguanta, la suma exacta no.
 
 ## Lo que falta antes de construir
 
-1. **Completar el censo**: quedan trece comunidades. Con lo aprendido aquí, cada
-   una son entre diez minutos (si publica datos abiertos) y una hora (si hay que
-   leer un PDF por coordenadas o conducir un buscador).
-2. **Medir a `controllegionela.es`**, el operador con SEO programático en 1.796
-   municipios. Es el único riesgo serio y es exactamente el patrón que en
-   amianto acabó siendo mortal.
-3. **Cruzar con los laboratorios**: 228 entidades acreditadas por ENAC para
-   legionella. Juntar "quién trata" y "quién analiza" es lo que nadie ha hecho.
-4. **Veinte llamadas** a empresas catalanas —que tienen las 361 con teléfono—
-   con la pregunta corregida: qué pagan hoy por conseguir un cliente y qué les
-   falta de quien se lo trae.
+Hechos ya: el censo (este documento), la medición del operador instalado
+(`LEGIONELA-COMPETENCIA.md`) y la extracción de las 225 entidades acreditadas
+por ENAC para el análisis.
+
+Queda:
+
+1. **Cerrar los tres huecos**: Galicia (pedir a Sanidade si distingue legionela,
+   o cruzar sus 203 servicios con otra fuente), Navarra y Ceuta. Son 200
+   empresas de 2.100: no bloquean nada, pero conviene no olvidarlos.
+2. **Decidir por dónde entra el producto**: verificación ("comprueba a quién
+   contratas", con el número de registro de cada ficha) o captación ("pide
+   presupuesto"). En lo segundo se compite de frente contra 36.000 páginas bien
+   hechas y mantenidas.
+3. **Veinte llamadas.** Hay teléfono en las fichas de Cataluña, Comunitat
+   Valenciana, Canarias, Balears, Asturias, Cantabria, Murcia, País Vasco,
+   Castilla-La Mancha, La Rioja y Melilla. Aragón y Castilla y León no publican
+   contacto. La pregunta: *qué pagas hoy por conseguir un cliente y qué te falta
+   de quien te lo trae*.
