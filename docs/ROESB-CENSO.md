@@ -1,10 +1,57 @@
-# Cuántas empresas de legionela hay: el censo de las cuatro grandes
+# Cuántas empresas de legionela hay en España
 
 19 de septiembre de 2026. Segundo paso de la validación del nicho superviviente
 (`CRIBA-RESULTADO.md`), con el mismo método que se usó con el amianto: abrir el
 registro, entender qué cuenta y filtrar por actividad, no por inscripción.
 
-## El resultado
+**Diecinueve territorios, dieciséis contados, 1.964 empresas.** El detalle de
+cada comunidad está en `ROESB-CENSO-NORTE.md` y `ROESB-CENSO-SUR.md`; aquí va
+el mapa completo.
+
+## El censo nacional
+
+| Comunidad | Inscripciones | **Empresas de legionela** | Cómo lo marca su registro | Calidad |
+|---|---:|---:|---|---|
+| Andalucía | 1.729 | **384** | Casilla `LEG.` en servicios biocidas | media |
+| Cataluña | 1.216 | **361** | Actividad propia de legionelosis | alta |
+| Comunitat Valenciana | 310 serv. | **286** | Tratamiento a terceros + biocida TP 02 | baja |
+| Madrid | 770 | **205** | Servicios a terceros + agua de torres | media |
+| Castilla y León | 557 | **104** | Columna `SERV_LEGIONELLA` | media |
+| Canarias | 319 | **96** | Actividad propia a terceros | alta |
+| Región de Murcia | 202 | **96** | Lista dedicada de legionelosis | alta |
+| País Vasco | 259 | **88** | Actividad `Legionella` + campo terceros | alta |
+| Castilla-La Mancha | 293 | **74** | Columna `LEGIONELLA` | media |
+| Aragón | 235 | **70** | Actividad propia `LG` a terceros | alta |
+| Extremadura | 139 | **57** | Sufijo `/L` en el número de registro | media |
+| Asturias | 128 | **45** | Columna `LEGIONELLA` en servicios | media |
+| Illes Balears | 71 serv. | **45** | Ámbito "prevención y control legionelosis" | alta |
+| Cantabria | 102 | **27** | Columna `legionella_TP` | media |
+| La Rioja | 71 | **22** | Etiqueta `(LEG)` en el nombre | media |
+| Melilla | 5 serv. | **4** | Palabra "Legionella" en actividades | media |
+| **16 territorios** | **6.406** | **1.964** | | |
+| Galicia | 391 | *sin marca* | No distingue legionela ni tipo de biocida; **techo: 203 servicios** | — |
+| Navarra | — | *sin dato* | No se localizó listado público vigente | — |
+| Ceuta | — | *sin dato* | Dominio inaccesible durante toda la sesión | — |
+
+En las tres comunidades comparables donde se puede calcular (Asturias,
+Extremadura, La Rioja), las empresas de legionela son el **66% de los servicios
+a terceros**. Aplicado a los 203 servicios gallegos salen ~133, y sumando una
+estimación prudente para Navarra y Ceuta:
+
+> ***Estimación del mercado nacional: unas 2.100-2.200 empresas.***
+
+**Ocho registros marcan la legionela con su propia actividad o columna** —
+Cataluña, Aragón, Canarias, Murcia, País Vasco, Balears y, con algo menos de
+precisión, Castilla y León y Castilla-La Mancha. Solo la Comunitat Valenciana
+obligó a caer al filtro débil (tipo de biocida TP 02, que es más amplio que
+legionela), así que su 286 es el número más inflado de la tabla.
+
+Ninguna comunidad usa el mismo criterio que otra. Ocho formas distintas de
+marcar lo mismo, repartidas en PDF, Excel, HTML, datos abiertos y cuatro
+buscadores con JavaScript. **Ese es exactamente el trabajo que un agregador
+ahorra a quien tiene que contratar**, y la razón de que no exista.
+
+## Las cuatro grandes, con el detalle del método
 
 | Comunidad | Inscripciones | **Empresas de legionela** | Cómo se filtra | Fecha |
 |---|---:|---:|---|---|
