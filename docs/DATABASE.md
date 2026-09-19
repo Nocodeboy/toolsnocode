@@ -134,3 +134,23 @@ They were 98% of the table and fed both the homepage "Trending" row and the
 per-listing stats a maker sees on their own page, which is the number the
 boost is sold against. Marking rather than deleting keeps the decision
 reversible: set `excluded_at` back to NULL to count them again.
+
+## What `is_featured` means
+
+`is_featured` marks an editor's pick: it puts a "Featured" badge on the card
+and the tool page, fills the homepage row and drives the Featured sort on
+`/tools`. A boosted listing is excluded from that row, so a pick is never
+something bought.
+
+The standard for adding one, applied on 19 September 2026 to the first
+twelve: the listing is complete (logo, screenshot and a description written
+from the tool's own site), the pricing label was verified against that site
+in the September pass, the product is live under the name we list it, the
+category is right, there is at most one pick per category, and the outbound
+link is not an affiliate link, so a pick cannot be a commission in disguise.
+
+The first twelve: Ahrefs, Cursor, DeepL, Deepgram, Figma, Intercom, Linear,
+Ollama, Raycast, Recraft, Supabase and VEED.IO. The homepage has six slots
+and `src/data/featured.ts` rotates the set weekly, deterministically, so the
+server-injected HTML and what React renders agree and every pick gets its
+turn.

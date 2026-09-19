@@ -8,6 +8,7 @@ import ToolRow from '../components/ui/ToolRow';
 import SectionHeader from '../components/ui/SectionHeader';
 import { useSEO, BASE_URL } from '../hooks/useSEO';
 import { STRIPE_PRODUCTS } from '../stripe-config';
+import { rotateWeekly } from '../data/featured';
 
 // El precio estaba escrito a mano en dos sitios de esta página. Sale del mismo
 // sitio que el checkout o acabará diciendo una cifra que nadie cobra.
@@ -59,7 +60,7 @@ export default function HomePage() {
         const [boostedRes, pickRes, newestRes, trendingRes, catRes, countRes, toolCount, expertCount, tutorialCount, projectCount] =
           await Promise.all([
             supabase.from('tools').select('*').eq('is_boosted', true).order('boost_expires_at', { ascending: false }).limit(6),
-            supabase.from('tools').select('*').eq('is_featured', true).eq('is_boosted', false).order('created_at', { ascending: false }).limit(6),
+            supabase.from('tools').select('*').eq('is_featured', true).eq('is_boosted', false).order('slug').limit(24),
             supabase.from('tools').select('*, category:categories(*)').order('created_at', { ascending: false }).limit(8),
             // `.gt('trending_score', 0)` es la diferencia entre una sección y un
             // duplicado. Con todos los scores a cero esta consulta ordenaba por
@@ -80,7 +81,7 @@ export default function HomePage() {
           ]);
 
         if (boostedRes.data) setBoostedTools(boostedRes.data);
-        if (pickRes.data) setEditorsPicks(pickRes.data);
+        if (pickRes.data) setEditorsPicks(rotateWeekly(pickRes.data, 6));
         if (newestRes.data) setNewestTools(newestRes.data);
         if (trendingRes.data) setTrendingTools(trendingRes.data);
         if (catRes.data) {
