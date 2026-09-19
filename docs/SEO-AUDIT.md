@@ -226,3 +226,24 @@ leave while the section fills with original work.
   video tools" is a buying-intent query the mixed category page could not
   answer honestly until the pricing pass.
 - `robots.txt` now names the sitemap.
+
+## 9. Tool pages as a mesh, and honest analytics (19 September)
+
+- **Tool pages render their full description and up to six alternatives**
+  from the same category, with `ItemList` schema. A listing used to be a
+  dead end for a crawler without JavaScript: one clipped paragraph and a
+  category link. It is now 9 KB with six internal links, which is what
+  turns 2,887 leaves into a mesh. With the pricing variants added the day
+  before, every listing now links to six siblings, its category and its
+  pricing page.
+- **The analytics were 98% crawler.** 1,764 of 1,807 recorded events were a
+  sequential crawl from before the user-agent filter shipped on 16
+  September. They are now marked as excluded and `refresh_tool_trending()`
+  ignores them. Real numbers for the last 30 days: 40 views across 29
+  listings and 3 outbound clicks. The homepage "Trending" row now needs at
+  least three qualifying tools before it renders, so it stays hidden until
+  there is real behaviour to show.
+- A check of category editorial copy found all 33 categories already
+  covered; no gap there.
+- Images are already WebP and between 1 and 45 KB, so there is nothing to
+  win by resizing them.
