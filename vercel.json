@@ -6,6 +6,10 @@
   "installCommand": "npm install",
   "rewrites": [
     {
+      "source": "/newsletter/:action(confirm|unsubscribe)",
+      "destination": "https://exlupbihqexeeyxwmveh.supabase.co/functions/v1/newsletter?action=:action"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://exlupbihqexeeyxwmveh.supabase.co/functions/v1/sitemap"
     },

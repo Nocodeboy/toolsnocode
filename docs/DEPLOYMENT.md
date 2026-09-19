@@ -91,8 +91,8 @@ se despliegan sin verificación de JWT en la pasarela porque su autenticación e
 otra — la firma de Stripe, o un secreto propio en tiempo constante:
 
 ```bash
-supabase functions deploy stripe-checkout stripe-webhook verify-tool-dns sitemap digest claim-notify --no-verify-jwt
-supabase functions deploy stripe-resync stripe-portal track-event claims-review
+supabase functions deploy stripe-checkout stripe-webhook verify-tool-dns sitemap digest claim-notify newsletter --no-verify-jwt
+supabase functions deploy stripe-resync stripe-portal track-event claims-review newsletter-send
 ```
 
 | Función | Qué hace | Secrets que lee |
@@ -107,6 +107,8 @@ supabase functions deploy stripe-resync stripe-portal track-event claims-review
 | `digest` | `GET` devuelve los hechos de la semana (`weekly_digest_brief`); `POST` publica una edición del boletín o la rechaza si algún enlace interno no existe. Cabecera `X-Digest-Secret`. | `DIGEST_SECRET` |
 | `claims-review` | `GET ?status=pending` lista las reclamaciones de ficha con su contexto (ficha reclamada, email del reclamante y si coincide con el dominio de la web); `POST {id, decision, note?}` aprueba o rechaza. Aprobar pone `user_id` en la ficha. Cabecera `X-Claims-Secret`. | `CLAIMS_SECRET` |
 | `claim-notify` | `POST {id}` manda al operador el correo de que ha entrado una reclamación, con la ficha, el reclamante y si su dominio coincide. La llama el disparador `claim_requests_notify`, no una persona. Cabecera `X-Claims-Notify-Secret`. | `CLAIMS_NOTIFY_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `OPERATOR_EMAIL` |
+| `newsletter` | Alta, confirmación y baja del boletín. `POST {email, source?}` manda el correo de confirmación; `GET ?action=confirm|unsubscribe&token=…` resuelve el enlace y devuelve su propia página HTML. Pública: la llaman el formulario del sitio y los enlaces del correo. | `RESEND_API_KEY`, `EMAIL_FROM`, `ALLOWED_ORIGINS` |
+| `newsletter-send` | `POST {slug?, test_to?, dry_run?}` manda una edición a la lista por tandas de 100. Sin `slug`, la última publicada. Cabecera `X-Digest-Secret`. | `DIGEST_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` |
 
 Todas leen además `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, que Supabase inyecta.
 
@@ -173,6 +175,42 @@ llamada válida —Postgres lo lee como base de datos + esquema y responde
 `cross-database references are not implemented`—, que es exactamente lo que
 hacía el cron de noticias que falló 150 veces seguidas. Se escribe
 `net.http_post(...)`.
+
+### Boletín: lista y envío
+
+Alta con doble confirmación. Una dirección entra en `newsletter_subscribers`
+como `pending` y no recibe nada hasta que alguien abre el enlace que llegó a
+ese buzón: sin ese paso cualquiera puede apuntar la dirección de otro, y esas
+quejas se pagan con la reputación del dominio.
+
+El formulario vive en `NewsletterSignup` (índice de noticias y pie de cada
+artículo) y contesta siempre lo mismo —"mira el buzón"— exista o no la
+dirección, para que no sirva de comprobador de quién está en la lista.
+
+Los enlaces del correo van a `toolsnocode.com/newsletter/confirm` y
+`/newsletter/unsubscribe`, que `vercel.json` reescribe a la función. La regla
+va la primera de la lista: el comodín que manda todo a `/api/page` se los
+quedaría.
+
+```bash
+# A cuánta gente iría la última edición
+curl -X POST https://<project>.supabase.co/functions/v1/newsletter-send \
+  -H "apikey: <anon>" -H "Authorization: Bearer <anon>" \
+  -H "X-Digest-Secret: $DIGEST_SECRET" -H "Content-Type: application/json" \
+  -d '{"dry_run":true}'
+
+# Prueba a una sola dirección (no registra nada)
+  -d '{"test_to":"tu@correo.com"}'
+
+# Envío de verdad
+  -d '{}'          # o {"slug":"…"} para una edición concreta
+```
+
+Lo que impide mandar dos veces la misma edición es el índice único de
+`newsletter_sends (news_id, subscriber_id)`, no el código: si una tanda se
+corta, el reintento salta a los que ya tienen fila. Cada correo lleva su enlace
+de baja en el cuerpo y en la cabecera `List-Unsubscribe`, que es lo que hace
+que Gmail enseñe "darse de baja" en vez de "marcar como spam".
 
 ### Reclamaciones de ficha
 
