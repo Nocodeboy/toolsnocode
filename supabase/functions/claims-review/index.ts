@@ -1,6 +1,8 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 import { secretsMatch } from '../_shared/boost-sync.ts';
+import { describeItem as describeItemRow, emailMatchesSite, itemUrl } from '../_shared/claims.ts';
+import { button, esc, sendEmail } from '../_shared/email.ts';
 
 /**
  * Revisar las reclamaciones de ficha.
@@ -22,57 +24,8 @@ import { secretsMatch } from '../_shared/boost-sync.ts';
  */
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-const ITEM_TABLES: Record<string, string> = {
-  tools: 'tools',
-  experts: 'experts',
-  tutorials: 'tutorials',
-  projects: 'projects',
-};
-
-/** El nombre de cada tipo de ficha vive en una columna distinta. */
-const TITLE_COLUMN: Record<string, string> = {
-  tools: 'name',
-  experts: 'name',
-  tutorials: 'title',
-  projects: 'title',
-};
-
-async function describeItem(itemType: string, itemId: string) {
-  const table = ITEM_TABLES[itemType];
-  if (!table) return null;
-  const title = TITLE_COLUMN[itemType];
-  const cols = `id, slug, user_id, ${title}` + (itemType === 'tools' ? ', website' : '');
-  const { data } = await supabase.from(table).select(cols).eq('id', itemId).maybeSingle();
-  if (!data) return null;
-  const row = data as Record<string, unknown>;
-  return {
-    table,
-    title: row[title] as string | null,
-    slug: row.slug as string | null,
-    owner_id: row.user_id as string | null,
-    website: (row.website as string | null) ?? null,
-  };
-}
-
-/** El dominio de un correo y el de una web, sin `www.` ni subdominios de cortesía. */
-function domainOf(value: string | null): string | null {
-  if (!value) return null;
-  const raw = value.includes('@') ? value.split('@').pop()! : value.replace(/^https?:\/\//, '').split('/')[0];
-  const host = raw.toLowerCase().replace(/^www\./, '').trim();
-  return host || null;
-}
-
-/**
- * La prueba que se sostiene sola: el reclamante escribe desde el dominio de la
- * herramienta. No es suficiente para aprobar a ciegas (un correo de Gmail no
- * significa impostura, y un dominio propio no significa que sea quien dice),
- * pero es lo primero que hay que mirar y no estaba a la vista en ningún sitio.
- */
-function emailMatchesSite(email: string | null, website: string | null): boolean | null {
-  const e = domainOf(email), w = domainOf(website);
-  if (!e || !w) return null;
-  return e === w || w.endsWith(`.${e}`) || e.endsWith(`.${w}`);
-}
+/** Las dos piezas de reclamaciones comparten cómo se describe una ficha. */
+const describeItem = (itemType: string, itemId: string) => describeItemRow(supabase, itemType, itemId);
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get('CLAIMS_SECRET');
@@ -145,5 +98,63 @@ Deno.serve(async (req) => {
   if (error) return Response.json({ error: error.message }, { status: 500 });
   if (!updated) return Response.json({ error: 'claim was reviewed by someone else' }, { status: 409 });
 
-  return Response.json({ ok: true, claim: updated, listing: item });
+  // Decirlo. El formulario prometía "we will contact you by email" y hasta
+  // ahora el reclamante solo se enteraba si volvía a su cuenta a mirar.
+  const mail = await notifyClaimant(claim.user_id, decision, updated.admin_note, claim.item_type, item);
+
+  return Response.json({ ok: true, claim: updated, listing: item, email: mail });
 });
+
+
+/**
+ * El correo al reclamante. No falla la revisión si no sale: la decisión ya
+ * está escrita, y un correo perdido se reenvía; una aprobación a medias no se
+ * arregla.
+ */
+async function notifyClaimant(
+  userId: string,
+  decision: 'approve' | 'reject',
+  note: string | null,
+  itemType: string,
+  item: { title: string | null; slug: string | null } | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const { data: claimant } = await supabase.auth.admin.getUserById(userId);
+  const to = claimant?.user?.email;
+  if (!to) return { ok: false, error: 'claimant has no email' };
+
+  const name = item?.title ?? 'your listing';
+  const url = itemUrl(itemType, item?.slug ?? null);
+
+  const { ok, error } = decision === 'approve'
+    ? await sendEmail({
+      to,
+      subject: `You now own the ${name} listing on ToolsNoCode`,
+      text: [
+        `Your claim for "${name}" has been approved.`,
+        url ? `The listing is yours to edit: ${url}` : '',
+        'You can update the description, pricing, logo and screenshots from the listing page, and you will see its visits and clicks in your account.',
+        note ? `\nNote from the review: ${note}` : '',
+      ].filter(Boolean).join('\n'),
+      html: `<p style="margin:0 0 12px;">Your claim for <strong>${esc(name)}</strong> has been approved. The listing is yours.</p>
+<p style="margin:0 0 12px;">You can now edit the description, pricing, logo and screenshots from the listing page, and its visits and clicks appear in your account.</p>
+${note ? `<p style="margin:0 0 12px;color:#8a8a8e;">Note from the review: ${esc(note)}</p>` : ''}
+${url ? button(url, 'Open your listing') : ''}`,
+    })
+    : await sendEmail({
+      to,
+      subject: `About your claim for ${name}`,
+      text: [
+        `We could not approve your claim for "${name}".`,
+        note ? `Reason: ${note}` : 'The evidence provided was not enough to transfer ownership of the listing.',
+        '',
+        'If you are the owner, the fastest proof is a DNS TXT record on the tool\'s own domain — the listing page walks you through it — or writing from an address at that domain.',
+        url ? `Listing: ${url}` : '',
+      ].filter(Boolean).join('\n'),
+      html: `<p style="margin:0 0 12px;">We could not approve your claim for <strong>${esc(name)}</strong>.</p>
+<p style="margin:0 0 12px;">${note ? esc(note) : 'The evidence provided was not enough to transfer ownership of the listing.'}</p>
+<p style="margin:0 0 12px;">If you are the owner, the fastest proof is a DNS TXT record on the tool's own domain — the listing page walks you through it — or writing to us from an address at that domain.</p>
+${url ? button(url, 'Open the listing') : ''}`,
+    });
+
+  return ok ? { ok } : { ok, error };
+}
