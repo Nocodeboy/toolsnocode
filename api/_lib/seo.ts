@@ -437,8 +437,23 @@ export function injectHead(html: string, meta: PageMeta): string {
   }
 
   // Contenido legible sin JS. `createRoot().render()` lo sustituye al montar.
+  //
+  // Va oculto por CSS y solo se muestra si el navegador no ejecuta JavaScript.
+  // El HTML se pinta antes de que el módulo de la aplicación llegue a correr, y
+  // como este bloque no lleva clases se veía un fotograma de texto sin estilo —
+  // la lista entera de enlaces — en cada carga. Con `display:none` en la
+  // cabecera no se pinta nunca; el `<noscript>` lo devuelve a la vista para
+  // quien no tiene JavaScript, que es justo para quien se escribió. Un
+  // rastreador que no ejecuta scripts lee el HTML tal cual y no aplica CSS, y
+  // el que sí los ejecuta (Google entre ellos) ve la aplicación montada, que
+  // dice lo mismo.
   if (meta.body) {
-    out = out.replace(/<div id="root"><\/div>/, `<div id="root">${meta.body}</div>`);
+    out = out.replace(
+      '</head>',
+      '    <style>#seo-fallback{display:none}</style>\n' +
+      '    <noscript><style>#seo-fallback{display:block}</style></noscript>\n  </head>',
+    );
+    out = out.replace(/<div id="root"><\/div>/, `<div id="root"><div id="seo-fallback">${meta.body}</div></div>`);
   }
 
   return out;
