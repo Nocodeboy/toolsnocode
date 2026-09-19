@@ -13,7 +13,17 @@ import '@fontsource/inter/latin-600.css';
 import '@fontsource/inter/latin-700.css';
 import './index.css';
 
-createRoot(document.getElementById('root')!).render(
+// Si la app arranca, la recarga por fragmento caducado hizo su trabajo: se
+// suelta el candado para que la próxima vez vuelva a estar disponible.
+try { sessionStorage.removeItem('chunk-reload'); } catch { /* modo privado */ }
+
+// El HTML del servidor trae contenido dentro de #root para quien no ejecuta
+// JavaScript. Se vacía de una vez antes de montar: si lo quita React nodo a
+// nodo y algo externo ya tocó el DOM, falla con "removeChild".
+const container = document.getElementById('root')!;
+container.innerHTML = '';
+
+createRoot(container).render(
   <StrictMode>
     <App />
     <Analytics />

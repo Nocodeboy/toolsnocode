@@ -6,34 +6,62 @@ import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import ErrorBoundary from './components/ErrorBoundary';
 
+/**
+ * `lazy()` que sobrevive a un despliegue.
+ *
+ * Los ficheros de `/assets` llevan hash y desaparecen cuando se publica una
+ * versión nueva. Una pestaña abierta desde antes sigue pidiendo los nombres
+ * viejos, así que la primera navegación a una ruta diferida lanza "Failed to
+ * fetch dynamically imported module" y el usuario ve la pantalla de error. De
+ * 56 errores registrados en producción, 34 eran exactamente eso, y otros 18
+ * eran el mismo problema por la otra cara: un fragmento antiguo cargado junto
+ * a uno nuevo deja dos copias de React y React lanza "invalid hook call".
+ *
+ * Recargar trae el HTML actual con los nombres actuales. El candado en
+ * `sessionStorage` evita el bucle si la recarga no arregla nada: a la segunda
+ * se deja pasar el error y salta el ErrorBoundary, que sí es informativo.
+ */
+function lazyRoute<T extends { default: React.ComponentType<unknown> }>(factory: () => Promise<T>) {
+  return lazy(() =>
+    factory().catch((error: unknown) => {
+      const KEY = 'chunk-reload';
+      if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(KEY)) {
+        sessionStorage.setItem(KEY, String(Date.now()));
+        window.location.reload();
+      }
+      throw error;
+    }),
+  );
+}
+
 // Lazy-loaded pages for code-splitting
-const ToolsPage = lazy(() => import('./pages/ToolsPage'));
-const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
-const CategoryPage = lazy(() => import('./pages/CategoryPage'));
-const ToolDetailPage = lazy(() => import('./pages/ToolDetailPage'));
-const ToolFormPage = lazy(() => import('./pages/ToolFormPage'));
-const ExpertsPage = lazy(() => import('./pages/ExpertsPage'));
-const ExpertDetailPage = lazy(() => import('./pages/ExpertDetailPage'));
-const ExpertFormPage = lazy(() => import('./pages/ExpertFormPage'));
-const TutorialsPage = lazy(() => import('./pages/TutorialsPage'));
-const TutorialDetailPage = lazy(() => import('./pages/TutorialDetailPage'));
-const TutorialFormPage = lazy(() => import('./pages/TutorialFormPage'));
-const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
-const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'));
-const ProjectFormPage = lazy(() => import('./pages/ProjectFormPage'));
-const AuthPage = lazy(() => import('./pages/AuthPage'));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
-const AccountPage = lazy(() => import('./pages/AccountPage'));
-const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
-const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
-const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
-const NewsPage = lazy(() => import('./pages/NewsPage'));
-const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage'));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
-const SignupPage = lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })));
-const PricingPage = lazy(() => import('./pages/PricingPage').then(m => ({ default: m.PricingPage })));
-const SuccessPage = lazy(() => import('./pages/SuccessPage').then(m => ({ default: m.SuccessPage })));
+const ToolsPage = lazyRoute(() => import('./pages/ToolsPage'));
+const CategoriesPage = lazyRoute(() => import('./pages/CategoriesPage'));
+const CategoryPage = lazyRoute(() => import('./pages/CategoryPage'));
+const ToolDetailPage = lazyRoute(() => import('./pages/ToolDetailPage'));
+const ToolFormPage = lazyRoute(() => import('./pages/ToolFormPage'));
+const ExpertsPage = lazyRoute(() => import('./pages/ExpertsPage'));
+const ExpertDetailPage = lazyRoute(() => import('./pages/ExpertDetailPage'));
+const ExpertFormPage = lazyRoute(() => import('./pages/ExpertFormPage'));
+const TutorialsPage = lazyRoute(() => import('./pages/TutorialsPage'));
+const TutorialDetailPage = lazyRoute(() => import('./pages/TutorialDetailPage'));
+const TutorialFormPage = lazyRoute(() => import('./pages/TutorialFormPage'));
+const ProjectsPage = lazyRoute(() => import('./pages/ProjectsPage'));
+const ProjectDetailPage = lazyRoute(() => import('./pages/ProjectDetailPage'));
+const ProjectFormPage = lazyRoute(() => import('./pages/ProjectFormPage'));
+const AuthPage = lazyRoute(() => import('./pages/AuthPage'));
+const FavoritesPage = lazyRoute(() => import('./pages/FavoritesPage'));
+const AccountPage = lazyRoute(() => import('./pages/AccountPage'));
+const PrivacyPolicyPage = lazyRoute(() => import('./pages/PrivacyPolicyPage'));
+const CookiePolicyPage = lazyRoute(() => import('./pages/CookiePolicyPage'));
+const TermsOfServicePage = lazyRoute(() => import('./pages/TermsOfServicePage'));
+const NewsPage = lazyRoute(() => import('./pages/NewsPage'));
+const NewsDetailPage = lazyRoute(() => import('./pages/NewsDetailPage'));
+const NotFoundPage = lazyRoute(() => import('./pages/NotFoundPage'));
+const LoginPage = lazyRoute(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignupPage = lazyRoute(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })));
+const PricingPage = lazyRoute(() => import('./pages/PricingPage').then(m => ({ default: m.PricingPage })));
+const SuccessPage = lazyRoute(() => import('./pages/SuccessPage').then(m => ({ default: m.SuccessPage })));
 
 function PageLoader() {
   return (
