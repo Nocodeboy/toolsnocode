@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useSEO } from '../hooks/useSEO';
 import { ilikeAny } from '../lib/search';
 import NewsCard from '../components/ui/NewsCard';
+import NewsletterSignup from '../components/ui/NewsletterSignup';
 import type { NewsArticle } from '../types';
 
 const CATEGORIES = ['All', 'AI Models', 'No-Code Tools', 'Industry', 'Research', 'Policy'];
@@ -108,6 +109,8 @@ export default function NewsPage() {
             The latest from the world of artificial intelligence and no-code tools — curated weekly.
           </p>
         </div>
+
+        <NewsletterSignup source="news-index" className="mb-10 max-w-2xl" />
 
         {loading ? (
           <div className="flex items-center justify-center py-32">

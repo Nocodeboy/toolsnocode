@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, ExternalLink, Tag, Clock, Twitter, Linkedin, Copy, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSEO } from '../hooks/useSEO';
+import NewsletterSignup from '../components/ui/NewsletterSignup';
 import type { NewsArticle } from '../types';
 
 const SITE_URL = 'https://toolsnocode.com';
@@ -413,6 +414,8 @@ export default function NewsDetailPage() {
             </div>
           </section>
         )}
+
+        <NewsletterSignup source="news-article" className="mt-12" />
       </div>
     </div>
   );

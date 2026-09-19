@@ -54,6 +54,17 @@ Two things, in this order:
 5. **Dry run.** `POST` with `dry_run: true`. The endpoint verifies every
    internal link exists and every field has the right shape. Fix what it lists.
 6. **Publish.** Same `POST` without `dry_run`. Report the URL.
+7. **Send it.** `POST /functions/v1/newsletter-send` with the same
+   `X-Digest-Secret`. Order: `{"test_to": "…"}` to read it once in a real
+   inbox, then `{"dry_run": true}` to see how many it would reach, then `{}`.
+   Without a `slug` it takes the edition just published. Nobody gets the same
+   edition twice — `newsletter_sends` has a unique index on
+   `(news_id, subscriber_id)` — so a send that failed halfway is safe to repeat.
+
+Until September 2026 there was no seventh step: the edition was published on
+the site and that was the whole distribution. The list exists now (double
+opt-in, `newsletter_subscribers`), and an edition that is written and not sent
+is the work without its readers.
 
 ## Style, briefly
 
