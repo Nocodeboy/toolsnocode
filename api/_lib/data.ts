@@ -20,6 +20,18 @@ async function rest<T>(path: string): Promise<T[]> {
 
 const one = async <T>(path: string) => (await rest<T>(path))[0] ?? null;
 
+/** Recuento exacto sin traer filas: PostgREST lo devuelve en `content-range`. */
+async function count(path: string): Promise<number> {
+  if (!ANON_KEY) throw new Error('VITE_SUPABASE_ANON_KEY is not set for the edge runtime');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: 'HEAD',
+    headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, Prefer: 'count=exact' },
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status} on ${path}`);
+  const total = res.headers.get('content-range')?.split('/')[1];
+  return total && total !== '*' ? Number(total) : 0;
+}
+
 export interface ToolRow {
   name: string; slug: string; tagline: string | null; description: string | null;
   logo_url: string | null; screenshot_urls: string[] | null; pricing: string | null;
@@ -58,4 +70,30 @@ export const getCategoriesWithCounts = async () => {
   ]);
   const byId = new Map(counts.map((c) => [c.category_id, c.tool_count]));
   return cats.map((c) => ({ ...c, tool_count: byId.get(c.id) ?? 0 })).sort((a, b) => b.tool_count - a.tool_count);
+};
+
+export interface ToolCard { name: string; slug: string; tagline: string | null; pricing: string | null }
+const CARD = 'select=name,slug,tagline,pricing';
+
+/** Lo que pinta `HomePage`: las mismas cuatro listas, en el mismo orden. */
+export const getHomeData = async () => {
+  const [boosted, picks, recent, trending, total, categories] = await Promise.all([
+    rest<ToolCard>(`tools?${CARD}&is_boosted=eq.true&order=boost_expires_at.desc&limit=6`),
+    rest<ToolCard>(`tools?${CARD}&is_featured=eq.true&is_boosted=eq.false&order=created_at.desc&limit=6`),
+    rest<ToolCard>(`tools?${CARD}&order=created_at.desc&limit=8`),
+    rest<ToolCard>(`tools?${CARD}&trending_score=gt.0&order=trending_score.desc&limit=6`),
+    count('tools?select=slug'),
+    getCategoriesWithCounts(),
+  ]);
+  return { boosted, picks, recent, trending, total, categories };
+};
+
+/** Lo que pinta `/tools` sin filtros: novedades primero, con las destacadas arriba. */
+export const getToolsHubData = async () => {
+  const [tools, total, categories] = await Promise.all([
+    rest<ToolCard>(`tools?${CARD}&order=is_boosted.desc,created_at.desc&limit=24`),
+    count('tools?select=slug'),
+    getCategoriesWithCounts(),
+  ]);
+  return { tools, total, categories };
 };

@@ -42,6 +42,7 @@ export default function HomePage() {
   }, [boostedTools, editorsPicks]);
 
   useSEO({
+    title: 'AI & No-Code Tools Directory',
     url: '/',
     type: 'website',
     jsonLd: highlightedJsonLd,
