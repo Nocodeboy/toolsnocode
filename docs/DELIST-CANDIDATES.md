@@ -615,7 +615,7 @@ See the next section for what was applied.
 
 # Applied — 18 September 2026
 
-**207 listings delisted** (`tools.delisted_at` set, reason in
+**213 listings delisted** (207 on 18 September, 6 more on 19 September after the recheck) (`tools.delisted_at` set, reason in
 `tools.delist_reason`, full rows copied to `tools_delisted_backup_20260918`).
 The set is every row above under *hijacked / remove first*, *renamed,
 acquired, pivoted or shut down*, *product shut down* and *not a software
@@ -642,5 +642,8 @@ product:
 | other (redirect loops, HTTP/2 resets, empty body) | 14 |
 
 Only a fetch from a normal network, or a look by hand, can settle these.
-The 27 that answer today should simply be re-run through the rewrite
-pipeline. Alive today: `anon`, `axyon-ai`, `brandscript-generator`, `dappergpt`, `easygen`, `echoreads`, `enzzo`, `equally-ai`, `flint`, `hume-ai`, `ninjachat-ai`, `perigon`, `phototagai`, `picso`, `pixela-ai`, `podclips`, `relevance-ai`, `roamaround`, `sheetai-app`, `topcreator`, `twitterbio`, `unriddle`, `vidflux-ai`, `viktor`, `vimerse-studio`, `writehuman`, `writingmate`.
+The 27 that answered were re-run through the rewrite pipeline on 19
+September: 15 got a description, 6 turned out to be renamed or acquired
+(`anon`, `equally-ai` → AudioEye, `podclips` → Fluent Frame, `roamaround` →
+Layla, `twitterbio` → Pallyy, `unriddle` → Anara) and were delisted the same
+way, and 6 still gave the crawler nothing to write from. Alive today: `anon`, `axyon-ai`, `brandscript-generator`, `dappergpt`, `easygen`, `echoreads`, `enzzo`, `equally-ai`, `flint`, `hume-ai`, `ninjachat-ai`, `perigon`, `phototagai`, `picso`, `pixela-ai`, `podclips`, `relevance-ai`, `roamaround`, `sheetai-app`, `topcreator`, `twitterbio`, `unriddle`, `vidflux-ai`, `viktor`, `vimerse-studio`, `writehuman`, `writingmate`.
