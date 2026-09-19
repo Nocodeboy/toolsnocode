@@ -367,6 +367,21 @@ Días. Germán puede llenar las primeras 100 fichas con su propia red y consegui
 
 ---
 
+# Corrección posterior (19 de septiembre, tras verificar el BOE)
+
+Este informe apoyaba el nicho 1 en "una obligación legal con fecha de
+caducidad: la Ley 7/2022 obliga a los ayuntamientos a censar el amianto y a
+retirar antes de 2028 las instalaciones públicas de mayor riesgo". Verificado
+el texto literal en el BOE, el matiz que el propio informe ya recogía es más
+importante de lo que parecía: **el plazo de 2028 alcanza solo a instalaciones
+públicas de mayor riesgo**, el plazo general del censo municipal venció en
+abril de 2023, y **la ley no prevé ninguna sanción** por incumplirlo — "amianto"
+no aparece ni una vez en su régimen de infracciones.
+
+O sea: el viento regulatorio existe, pero empuja sobre todo al sector público y
+sin multa detrás. La urgencia que el sector vende al propietario privado no
+está en la ley. Ver `AMIANTO-DEMANDA.md`.
+
 # Nichos descartados
 
 | Nicho | Por qué no pasa el filtro |
