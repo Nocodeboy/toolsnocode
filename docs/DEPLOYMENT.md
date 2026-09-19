@@ -64,6 +64,13 @@ tiempo de ejecución (las mismas variables que usa la build).
 
 Ver [SEO-AUDIT.md](./SEO-AUDIT.md) para el porqué.
 
+### The SPA shell is `app.html`
+
+`npm run build` renames `dist/index.html` to `dist/app.html`. Vercel serves
+a file that exists at a path before it looks at `rewrites`, so with
+`index.html` at the root the homepage never reached the edge SEO layer.
+Every rewrite that used to point at `/index.html` points at `/app.html`.
+
 ### RSS feed
 
 `/feed.xml` is rewritten to the edge function `api/feed.ts`, which reads the

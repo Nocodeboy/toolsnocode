@@ -140,7 +140,7 @@ function toolMeta(slug: string, t: ToolRow | null): PageMeta {
 <h1>${esc(t.name)}</h1>
 ${tagline ? `<p>${esc(tagline)}</p>` : ''}
 ${desc ? `<p>${esc(clip(desc, 600))}</p>` : ''}
-<p>${cat ? `Category: <a href="/categories/${esc(cat.slug)}">${esc(cat.name)}</a>. ` : ''}${t.pricing ? `Pricing: ${esc(t.pricing)}. ` : ''}${t.website ? `<a href="${esc(t.website)}" rel="noopener">Visit website</a>` : ''}</p>
+<p>${cat ? `Category: <a href="/categories/${esc(cat.slug)}">${esc(cat.name)}</a>. ` : ''}${t.pricing ? `Pricing: ${cat && isPricingSlug(t.pricing) ? `<a href="/categories/${esc(cat.slug)}/${t.pricing}">${esc(t.pricing)}</a>` : esc(t.pricing)}. ` : ''}${t.website ? `<a href="${esc(t.website)}" rel="noopener">Visit website</a>` : ''}</p>
 </article></main>`,
   };
 }

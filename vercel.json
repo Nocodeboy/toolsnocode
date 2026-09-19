@@ -54,7 +54,7 @@
       ]
     },
     {
-      "source": "/categories/:slug([a-z0-9-]+)/:pricing(free|freemium|paid|enterprise)",
+      "source": "/categories/:slug([a-z0-9-]+)/:pricing([a-z]+)",
       "destination": "/api/page?p=/categories/:slug/:pricing",
       "missing": [
         {

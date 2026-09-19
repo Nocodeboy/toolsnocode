@@ -208,3 +208,21 @@ four listed tools and two categories, which the publish endpoint enforces.
 The twenty March paraphrases are a product decision: they add nothing and
 could be delisted the same way tools were, but they are harmless enough to
 leave while the section fills with original work.
+
+## 8. Homepage, tools hub and pricing pages (19 September)
+
+- **`/` and `/tools` are server-rendered.** They were the two most-linked
+  pages and returned a 3 KB shell with a generic title to anything without
+  JavaScript. Vercel serves an existing file before it applies rewrites, so
+  the SPA shell is now built as `app.html`; `/` reaches the edge layer and
+  answers 9 KB with the live tool count in the title, the four homepage
+  lists as links and all 33 categories with counts.
+- **Pricing-filtered category pages** at `/categories/:slug/:pricing`
+  (free, freemium, paid, enterprise). 120 variants exist; 77 hold at least
+  eight tools and are indexable and in the sitemap, the rest work but carry
+  `noindex`. Each states what the label means (the labels were checked
+  against every tool's own site in September), shows pricing pills with
+  counts, and links back to the category. They exist because "free AI
+  video tools" is a buying-intent query the mixed category page could not
+  answer honestly until the pricing pass.
+- `robots.txt` now names the sitemap.
