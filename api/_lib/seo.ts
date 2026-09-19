@@ -1,5 +1,6 @@
 import type { CategoryRow, NewsRow, ToolRow } from './data';
-import { getCategoriesWithCounts, getCategory, getCategoryPricingCounts, getCategoryToolCount, getCategoryTopTools, getHomeData, getNews, getNewsList, getTool, getToolsHubData } from './data';
+import { getCategoriesWithCounts, getCategory, getCategoryPricingCounts, getCategoryToolCount, getCategoryTopTools, getHomeData, getNews, getNewsList, getProject, getProjectList, projectTools, getTool, getToolsHubData } from './data';
+import type { ProjectRow } from './data';
 import type { ToolCard } from './data';
 import { CATEGORY_COPY } from '../../src/data/categoryCopy';
 import { INDEX_MIN, PRICING_LABEL, PRICING_SLUGS, isPricingSlug, pricingCopy, type PricingSlug } from '../../src/data/pricingPages';
@@ -82,6 +83,15 @@ export async function describe(pathname: string): Promise<PageMeta | null> {
   if (/^\/categories\/?$/.test(pathname)) return categoriesIndexMeta(await getCategoriesWithCounts());
 
   if (/^\/news\/?$/.test(pathname)) return newsIndexMeta(await getNewsList(20));
+
+  const projectSlug = m(/^\/projects\/([a-z0-9-]+)\/?$/);
+  if (projectSlug && projectSlug !== 'new') {
+    const project = await getProject(projectSlug);
+    if (!project) return notFound(`/projects/${projectSlug}`);
+    return projectMeta(project, projectTools(project));
+  }
+
+  if (/^\/projects\/?$/.test(pathname)) return projectsIndexMeta(await getProjectList());
 
   if (/^\/tools\/?$/.test(pathname)) return toolsHubMeta(await getToolsHubData());
 
@@ -466,6 +476,91 @@ ${toolList(d.tools)}
 <h2>By category</h2>
 ${categoryList(d.categories)}
 <p><a href="/categories">All categories</a> · <a href="/news">News and data stories</a></p>
+</main>`,
+  };
+}
+
+// ── Proyectos ───────────────────────────────────────────────────────────────
+//
+// 63 páginas con descripción propia, captura y el stack enlazado, anunciadas
+// en el sitemap y servidas hasta ahora como la shell del SPA. Un proyecto flojo
+// (menos de 200 caracteres, el mismo umbral que las fichas) sigue existiendo
+// pero no se indexa.
+
+const PROJECT_INDEX_MIN = 200;
+
+function projectMeta(p: ProjectRow, tools: { name: string; slug: string }[]): PageMeta {
+  const desc = plain(p.description);
+  const description = clip(desc || `${p.title}, a no-code project on ${SITE_NAME}.`, 160);
+  const image = p.screenshot_url && /^https?:\/\//.test(p.screenshot_url) ? p.screenshot_url : DEFAULT_IMAGE;
+  return {
+    title: `${p.title} — No-Code Project`,
+    description,
+    canonical: `${BASE_URL}/projects/${p.slug}`,
+    image,
+    type: 'article',
+    noindex: desc.length < PROJECT_INDEX_MIN,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CreativeWork',
+        name: p.title,
+        description: desc || undefined,
+        image: image,
+        url: `${BASE_URL}/projects/${p.slug}`,
+        ...(p.author_name ? { author: { '@type': 'Person', name: p.author_name } } : {}),
+        datePublished: p.created_at,
+        ...(tools.length > 0 ? { about: tools.map((t) => ({ '@type': 'SoftwareApplication', name: t.name, url: `${BASE_URL}/tools/${t.slug}` })) } : {}),
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Projects', item: `${BASE_URL}/projects` },
+          { '@type': 'ListItem', position: 3, name: p.title, item: `${BASE_URL}/projects/${p.slug}` },
+        ],
+      },
+    ],
+    body: `<main><article>
+<h1>${esc(p.title)}</h1>
+${p.author_name ? `<p>Built by ${esc(p.author_name)}</p>` : ''}
+${desc.split(/\n\s*\n/).map((x) => plain(x)).filter(Boolean).map((x) => `<p>${esc(x)}</p>`).join('\n')}
+${tools.length > 0 ? `<h2>Built with</h2>
+<ul>${tools.map((t) => `<li><a href="/tools/${esc(t.slug)}">${esc(t.name)}</a></li>`).join('')}</ul>` : ''}
+${p.live_url ? `<p><a href="${esc(p.live_url)}" rel="noopener">Visit the project</a></p>` : ''}
+<p><a href="/projects">More no-code projects</a> · <a href="/tools">Browse the directory</a></p>
+</article></main>`,
+  };
+}
+
+function projectsIndexMeta(items: ProjectRow[]): PageMeta {
+  const description = `Real things people built without writing code, each with the tools used listed and linked. ${items.length} projects from makers in the ${SITE_NAME} community.`;
+  return {
+    title: 'No-Code Projects and What They Were Built With',
+    description: clip(description, 160),
+    canonical: `${BASE_URL}/projects`,
+    image: DEFAULT_IMAGE,
+    type: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'No-Code Projects',
+      url: `${BASE_URL}/projects`,
+      description: clip(description, 160),
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: items.length,
+        itemListElement: items.map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: `${BASE_URL}/projects/${p.slug}`, name: p.title })),
+      },
+    },
+    body: `<main>
+<h1>No-code projects</h1>
+<p>${esc(description)}</p>
+<ul>
+${items.map((p) => `<li><a href="/projects/${esc(p.slug)}">${esc(p.title)}</a>${p.author_name ? ` — ${esc(p.author_name)}` : ''}</li>`).join('\n')}
+</ul>
+<p><a href="/tools">Browse the directory</a></p>
 </main>`,
   };
 }

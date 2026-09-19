@@ -68,6 +68,23 @@ Deno.serve(async (req: Request) => {
     }
 
     /**
+     * Un proyecto con dos frases no es una página: el mismo umbral de 200
+     * caracteres que decide si una ficha de herramienta se indexa decide aquí
+     * si el proyecto se anuncia. PostgREST no filtra por `length()`, así que
+     * el corte se hace aquí.
+     */
+    async function fetchProjects() {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("slug, created_at, description")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`sitemap: projects -> ${error.message}`);
+      return ((data ?? []) as Array<{ slug: string; created_at: string; description: string | null }>)
+        .filter((p) => p.slug && (p.description ?? "").trim().length >= 200)
+        .map((p) => ({ slug: p.slug, lastmod: p.created_at }));
+    }
+
+    /**
      * `experts` y `tutorials` no emiten fichas individuales a propósito.
      *
      * Medido sobre una muestra de 1.000 filas de cada tabla: la mediana de la
@@ -82,7 +99,7 @@ Deno.serve(async (req: Request) => {
      */
     const [tools, projects, news, categories] = await Promise.all([
       fetchAll("tools", "updated_at", true),
-      fetchAll("projects", "created_at"),
+      fetchProjects(),
       fetchAll("news", "published_at"),
       fetchAll("categories", "created_at"),
     ]);

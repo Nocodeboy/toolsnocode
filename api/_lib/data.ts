@@ -104,3 +104,21 @@ export const getToolsHubData = async () => {
   ]);
   return { tools, total, categories };
 };
+
+export interface ProjectRow {
+  title: string; slug: string; description: string | null; screenshot_url: string | null;
+  live_url: string | null; author_name: string | null; created_at: string;
+  /** El stack del proyecto. Una herramienta dada de baja llega como null: la RLS la tapa. */
+  project_tools?: Array<{ tool: { name: string; slug: string } | null }> | null;
+}
+
+const PROJECT_COLS = 'title,slug,description,screenshot_url,live_url,author_name,created_at';
+
+export const getProject = (slug: string) =>
+  one<ProjectRow>(`projects?select=${PROJECT_COLS},project_tools(tool:tools(name,slug))&slug=eq.${encodeURIComponent(slug)}&limit=1`);
+
+export const projectTools = (p: ProjectRow) =>
+  (p.project_tools ?? []).map((r) => r.tool).filter((t): t is { name: string; slug: string } => !!t);
+
+export const getProjectList = (n = 60) =>
+  rest<ProjectRow>(`projects?select=${PROJECT_COLS}&order=created_at.desc&limit=${n}`);

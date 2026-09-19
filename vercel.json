@@ -84,6 +84,26 @@
       ]
     },
     {
+      "source": "/projects/:slug([a-z0-9-]+)",
+      "destination": "/api/page?p=/projects/:slug",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
+      "source": "/projects",
+      "destination": "/api/page?p=/projects",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
       "source": "/",
       "destination": "/api/page?p=/",
       "missing": [
