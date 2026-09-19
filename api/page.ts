@@ -10,6 +10,10 @@ export const config = { runtime: 'edge' };
  * HTML de siempre a la propia app (con `x-seo-bypass`, que la regla de reescritura
  * exige que falte), lo modifica y lo devuelve.
  *
+ * El cascarón del SPA se construye como `app.html`, no `index.html`: Vercel
+ * sirve un fichero que exista en la ruta antes de mirar las reescrituras, y
+ * con `index.html` en la raíz la portada nunca llegaba aquí.
+ *
  * Falla abierto en todos los casos: si Supabase no responde, si la ruta no es
  * de las que conoce, si algo lanza — devuelve el HTML original sin tocar. La
  * única situación en la que cambia el código de estado es cuando la fila no
