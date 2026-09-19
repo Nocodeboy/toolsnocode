@@ -91,7 +91,7 @@ se despliegan sin verificación de JWT en la pasarela porque su autenticación e
 otra — la firma de Stripe, o un secreto propio en tiempo constante:
 
 ```bash
-supabase functions deploy stripe-checkout stripe-webhook verify-tool-dns sitemap digest --no-verify-jwt
+supabase functions deploy stripe-checkout stripe-webhook verify-tool-dns sitemap digest claim-notify --no-verify-jwt
 supabase functions deploy stripe-resync stripe-portal track-event claims-review
 ```
 
@@ -106,6 +106,7 @@ supabase functions deploy stripe-resync stripe-portal track-event claims-review
 | `track-event` | Registra `detail_view` / `outbound_click` en `tool_events`. Descarta crawlers por User-Agent y limita por IP. | — |
 | `digest` | `GET` devuelve los hechos de la semana (`weekly_digest_brief`); `POST` publica una edición del boletín o la rechaza si algún enlace interno no existe. Cabecera `X-Digest-Secret`. | `DIGEST_SECRET` |
 | `claims-review` | `GET ?status=pending` lista las reclamaciones de ficha con su contexto (ficha reclamada, email del reclamante y si coincide con el dominio de la web); `POST {id, decision, note?}` aprueba o rechaza. Aprobar pone `user_id` en la ficha. Cabecera `X-Claims-Secret`. | `CLAIMS_SECRET` |
+| `claim-notify` | `POST {id}` manda al operador el correo de que ha entrado una reclamación, con la ficha, el reclamante y si su dominio coincide. La llama el disparador `claim_requests_notify`, no una persona. Cabecera `X-Claims-Notify-Secret`. | `CLAIMS_NOTIFY_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, `OPERATOR_EMAIL` |
 
 Todas leen además `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, que Supabase inyecta.
 
@@ -119,6 +120,10 @@ Secrets compartidos u opcionales:
 | `RESYNC_SECRET` | Autoriza `stripe-resync`. Generar con `openssl rand -hex 32`. |
 | `DIGEST_SECRET` | Autoriza `digest`. El mismo valor va en el entorno de Claude Code que ejecuta la rutina del boletín. |
 | `CLAIMS_SECRET` | Autoriza `claims-review`. Generar con `openssl rand -hex 32`. |
+| `CLAIMS_NOTIFY_SECRET` | Autoriza `claim-notify`. El mismo valor va en el secreto de Vault `claims_notify_secret`, que es de donde lo lee el disparador. |
+| `RESEND_API_KEY` | Clave de Resend con permiso de envío, restringida al dominio `toolsnocode.com`. |
+| `EMAIL_FROM` | Remitente de todo el correo transaccional. Por defecto `ToolsNoCode <hello@toolsnocode.com>`. |
+| `OPERATOR_EMAIL` | Buzón que recibe los avisos de operación (reclamaciones nuevas). Sin él, `claim-notify` devuelve 500 en vez de enviar a ciegas. |
 
 **CORS**: la allow-list es compartida ([`_shared/cors.ts`](../supabase/functions/_shared/cors.ts)) y se configura con `ALLOWED_ORIGINS`. La coincidencia es exacta: los previews de Vercel cambian de URL en cada rama, así que hay que añadir el alias concreto en vez de un comodín — estos mismos orígenes validan las URLs de redirección de Stripe y un comodín ahí sería un open redirect.
 
@@ -136,6 +141,38 @@ Secrets compartidos u opcionales:
     -d '{"customer_id":"cus_…"}'
   ```
   (con `"inspect": true` no modifica nada; con `{"price_id":"price_…"}` describe un precio).
+
+### Correo
+
+Todo sale por **Resend**, desde `toolsnocode.com` (región `eu-west-1`), con una
+sola plantilla en [`_shared/email.ts`](../supabase/functions/_shared/email.ts).
+El dominio está verificado con cuatro registros en el DNS de Hostinger —DKIM
+(`resend._domainkey`), SPF en TXT y MX bajo `send`, y el CNAME `rsend`— más un
+`_dmarc` en `p=none`.
+
+| Correo | Cuándo | A quién |
+|--------|--------|---------|
+| Reclamación recibida | Al insertarse una fila `pending` en `claim_requests` (disparador → `claim-notify`) | `OPERATOR_EMAIL` |
+| Decisión de la reclamación | Al resolverla con `claims-review` | El reclamante |
+| Recuperar contraseña y cambios de email | Supabase Auth | El usuario |
+
+**Auth usa SMTP propio**: `smtp.resend.com:465`, usuario `resend`, contraseña la
+misma API key, remitente `hello@toolsnocode.com`. Antes salía por el remitente
+compartido de Supabase, limitado a unos pocos envíos por hora y desaconsejado
+para producción. `mailer_autoconfirm` sigue en `true`: los registros se
+confirman solos y no se envía correo de confirmación.
+
+El envío nunca es bloqueante. `sendEmail` no lanza: si Resend rechaza el envío
+lo deja en el log y devuelve el error, porque una aprobación a medias no se
+arregla y un correo perdido se reenvía. Lo enviado se consulta en el panel de
+Resend; lo que el disparador recibió de vuelta, en `net._http_response`.
+
+**Cuidado con `pg_net`**: la extensión se instala en el esquema `extensions`
+pero sus funciones viven en `net`. `extensions.net.http_post(...)` no es una
+llamada válida —Postgres lo lee como base de datos + esquema y responde
+`cross-database references are not implemented`—, que es exactamente lo que
+hacía el cron de noticias que falló 150 veces seguidas. Se escribe
+`net.http_post(...)`.
 
 ### Reclamaciones de ficha
 
