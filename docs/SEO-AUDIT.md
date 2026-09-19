@@ -102,7 +102,7 @@ Tenth pass (171–183 characters, 184 rows): 176 sites answered, **147
 rewritten and live**, 26 null. Eleventh pass (183–199 characters, 180
 rows): 174 sites answered, **145 rewritten and live**, 24 null.
 
-**Result after eleven passes: 1,414 tool pages rewritten**, average
+**Result after twelve passes: 1,429 tool pages rewritten**, average
 description length 228 → 672 characters, and 2,361 of 3,098 tools (76%)
 now carry a description of 200 characters or more, up from 31% on 16
 September. The pass set is exhausted: every page under 200 characters
@@ -116,13 +116,13 @@ empty, pricing evidence must be a literal quote) and a manual pass over
 every number and proper noun before applying. The passes also surfaced
 152 listings whose product has been renamed, acquired or shut down, 8
 hijacked domains, 2 stored taglines that are gambling spam and 2 listings
-that now link to adult content. **On 18 September 207 of them were
+that now link to adult content. **On 18–19 September 213 of them were
 delisted** (hijacked, renamed, acquired, shut down, not a tool); the
-listed directory is now 2,891 tools, 82% of them with a description of 200
+listed directory is now 2,887 tools, 82.3% of them with a description of 200
 characters or more. The "unreachable" group was re-fetched and held back:
 27 answer today and most of the rest fail only at this environment's proxy.
 
-The same site fetch was used to reconcile the `pricing` field: **439 rows
+The same site fetch was used to reconcile the `pricing` field: **441 rows
 corrected** where the site contradicted the listed value with explicit
 evidence (backup table `tools_pricing_backup_20260917`). `freemium` had
 been the scraper's default for 59% of the directory; the corrections were
