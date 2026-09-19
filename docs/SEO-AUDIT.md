@@ -245,5 +245,27 @@ leave while the section fills with original work.
   there is real behaviour to show.
 - A check of category editorial copy found all 33 categories already
   covered; no gap there.
+- **Project pages are server-rendered too.** 63 showcase pages (525-character
+  average description, a screenshot, the stack linked to real listings) were
+  in the sitemap and served as the bare shell. They now carry CreativeWork
+  schema and link every tool in their stack, adding 78 internal links into
+  the catalogue. The 23 under 200 characters are noindex and out of the
+  sitemap, which took the advertised projects from 63 to 40.
 - Images are already WebP and between 1 and 45 KB, so there is nothing to
   win by resizing them.
+
+### Verified in production, 19 September
+
+A sample of 35 sitemap URLs across every page shape returns 200, with the
+SEO layer injecting on every route that has one and no fallbacks. A missing
+tool, news, category, pricing variant or project answers a real 404.
+
+### Open, and not a code problem
+
+The homepage has one boosted listing and **zero editor's picks**: no row in
+the directory carries `is_featured` without also being boosted. With the
+crawler events excluded there is also not enough behaviour to fill a
+Trending row. So the only curation the homepage shows today is one paid
+placement and "Recently added". Picking editor's picks is an editorial call,
+not something to derive from the data, and it is the cheapest remaining
+improvement to the page with the most inbound links.
