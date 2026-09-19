@@ -1,5 +1,6 @@
 import type { CategoryRow, NewsRow, ToolRow } from './data';
-import { getCategoriesWithCounts, getCategory, getCategoryToolCount, getCategoryTopTools, getNews, getNewsList, getTool } from './data';
+import { getCategoriesWithCounts, getCategory, getCategoryToolCount, getCategoryTopTools, getHomeData, getNews, getNewsList, getTool, getToolsHubData } from './data';
+import type { ToolCard } from './data';
 import { CATEGORY_COPY } from '../../src/data/categoryCopy';
 
 /**
@@ -62,6 +63,10 @@ export async function describe(pathname: string): Promise<PageMeta | null> {
   if (/^\/categories\/?$/.test(pathname)) return categoriesIndexMeta(await getCategoriesWithCounts());
 
   if (/^\/news\/?$/.test(pathname)) return newsIndexMeta(await getNewsList(20));
+
+  if (/^\/tools\/?$/.test(pathname)) return toolsHubMeta(await getToolsHubData());
+
+  if (/^\/?$/.test(pathname)) return homeMeta(await getHomeData());
 
   return null; // el resto se sirve tal cual
 }
@@ -322,4 +327,96 @@ export function injectHead(html: string, meta: PageMeta): string {
   }
 
   return out;
+}
+
+// ── Portada y hub de herramientas ────────────────────────────────────────────
+//
+// Son las dos páginas con más enlaces entrantes del sitio y, sin esto, las dos
+// que menos decían a un rastreador: 3 KB de cascarón y un título genérico.
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+const toolList = (items: ToolCard[]) =>
+  `<ul>\n${items.map((t) => `<li><a href="/tools/${esc(t.slug)}">${esc(t.name)}</a>${t.tagline ? ` — ${esc(clip(plain(t.tagline), 120))}` : ''}</li>`).join('\n')}\n</ul>`;
+
+const categoryList = (cats: { name: string; slug: string; tool_count: number }[]) =>
+  `<ul>\n${cats.map((c) => `<li><a href="/categories/${esc(c.slug)}">${esc(c.name)}</a> (${fmt(c.tool_count)})</li>`).join('\n')}\n</ul>`;
+
+const itemList = (items: ToolCard[]) => ({
+  '@type': 'ItemList',
+  numberOfItems: items.length,
+  itemListElement: items.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: `${BASE_URL}/tools/${t.slug}`, name: t.name })),
+});
+
+function homeMeta(d: Awaited<ReturnType<typeof getHomeData>>): PageMeta {
+  const total = fmt(d.total);
+  const description = `Compare ${total} AI and no-code tools across ${d.categories.length} categories, with pricing checked against each tool's own site. Boosted picks, editor's picks and what builders are opening this week.`;
+  const sections: Array<[string, ToolCard[]]> = [
+    ['Boosted this week', d.boosted],
+    ["Editor's picks", d.picks],
+    ['Trending', d.trending],
+    ['Recently added', d.recent],
+  ];
+  return {
+    title: `AI & No-Code Tools Directory: ${total} Tools Compared`,
+    description: clip(description, 160),
+    canonical: `${BASE_URL}/`,
+    image: DEFAULT_IMAGE,
+    type: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `${SITE_NAME}: AI & No-Code Tools Directory`,
+      url: `${BASE_URL}/`,
+      description: clip(description, 160),
+      mainEntity: itemList([...d.boosted, ...d.picks, ...d.trending].slice(0, 12)),
+    },
+    body: `<main>
+<h1>Discover the best AI &amp; no-code tools</h1>
+<p>${esc(description)}</p>
+${sections.filter(([, items]) => items.length > 0).map(([h, items]) => `<h2>${esc(h)}</h2>\n${toolList(items)}`).join('\n')}
+<h2>Browse by category</h2>
+${categoryList(d.categories)}
+<p><a href="/tools">All ${total} tools</a> · <a href="/news">News and data stories</a> · <a href="/pricing">Boost a listing</a></p>
+</main>`,
+  };
+}
+
+function toolsHubMeta(d: Awaited<ReturnType<typeof getToolsHubData>>): PageMeta {
+  const total = fmt(d.total);
+  const description = `Browse ${total} AI and no-code tools. Filter by category and pricing model (free, freemium, paid, enterprise), each label checked against the tool's own site.`;
+  return {
+    title: `All AI & No-Code Tools (${total})`,
+    description: clip(description, 160),
+    canonical: `${BASE_URL}/tools`,
+    image: DEFAULT_IMAGE,
+    type: 'website',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'All AI & No-Code Tools',
+        url: `${BASE_URL}/tools`,
+        description: clip(description, 160),
+        mainEntity: itemList(d.tools),
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: SITE_NAME, item: BASE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Tools', item: `${BASE_URL}/tools` },
+        ],
+      },
+    ],
+    body: `<main>
+<h1>All AI &amp; no-code tools</h1>
+<p>${esc(description)}</p>
+<h2>Latest additions</h2>
+${toolList(d.tools)}
+<h2>By category</h2>
+${categoryList(d.categories)}
+<p><a href="/categories">All categories</a> · <a href="/news">News and data stories</a></p>
+</main>`,
+  };
 }

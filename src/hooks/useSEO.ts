@@ -61,7 +61,7 @@ function removeJsonLd(id: string) {
 export function useSEO({ title, description, image, url, type = 'website', noindex = false, jsonLd }: SEOProps) {
   useEffect(() => {
     const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Discover the Best AI & No-Code Tools`;
-    const fullDescription = description || 'The ultimate discovery hub for AI and No-Code tools. Compare stacks, find experts, learn tutorials, and showcase projects built without code.';
+    const fullDescription = description || 'A directory of AI and no-code tools with pricing checked against each tool\'s own site. Compare by category, find what builders are opening this week, and boost your own listing.';
     const fullImage = image || DEFAULT_OG_IMAGE;
     const isDefaultImage = fullImage === DEFAULT_OG_IMAGE;
     // Sin `url` explícita (registro cargando o inexistente) la canónica es la propia

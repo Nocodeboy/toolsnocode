@@ -61,7 +61,7 @@ export default function ToolsPage() {
   );
 
   useSEO({
-    title: 'AI & No-Code Tools',
+    title: 'All AI & No-Code Tools',
     description: TOOLS_DESCRIPTION,
     url: canonicalPath,
     jsonLd,
