@@ -86,6 +86,79 @@ pudieron leer **12 mencionan amianto en portada y 5 ofrecen explícitamente el
 servicio de retirada**. Es una medición de portada, así que es un suelo, pero
 apunta al mismo sitio.
 
+## Dónde está la actividad, comunidad a comunidad
+
+Cruzando lo publicado hoy con las empresas que presentaron plan de trabajo en
+2019 (INSST) sale el mapa de dónde se trabaja de verdad — y de lo distinto que
+es cada registro:
+
+| Comunidad | Publicadas | Trabajan (2019) | Ratio |
+|---|---:|---:|---:|
+| Comunitat Valenciana | 946 | 223 | 24% |
+| Cataluña | 2.108 | 188 | 9% |
+| Castilla y León | 539 | 164 | 30% |
+| Galicia | 826 | 137 | 17% |
+| Andalucía | 857 | 104 | 12% |
+| Madrid | 813 | 103 | 13% |
+| País Vasco | 171 | 73 | 43% |
+| Castilla-La Mancha | 137 | 61 | 45% |
+| Aragón | 274 | 54 | 20% |
+| Asturias | 247 | 40 | 16% |
+| Navarra | 92 | 34 | 37% |
+| Extremadura | 138 | 31 | 22% |
+| Canarias | 160 | 28 | 18% |
+| Murcia | 233 | 25 | 11% |
+| Illes Balears | 230 | 20 | 9% |
+| Cantabria | sin dato | 17 | — |
+| La Rioja | 26 | 15 | 58% |
+| **Total** | **7.805** | **1.317** | **17%** |
+
+Dos lecturas:
+
+- **La actividad no sigue al tamaño del registro.** La Comunitat Valenciana
+  tiene menos de la mitad de inscripciones que Cataluña y más empresas
+  trabajando. Castilla y León, con una cuarta parte de las inscripciones de
+  Cataluña, tiene casi las mismas trabajando. Si el directorio se monta por
+  fases, el orden no es por número de fichas sino por actividad.
+- **Los ratios altos delatan el filtro del listado.** La Rioja (58%),
+  Castilla-La Mancha (45%) y País Vasco (43%) son justo los registros que
+  publican solo altas vigentes o solo empresas que consienten. Es una
+  comprobación interna de que la clasificación de cobertura es correcta.
+
+- **Cantabria queda cubierta a medias**: no se pudo contar su registro, pero el
+  INSST dice que 17 de sus empresas presentaron plan de trabajo en 2019. Para
+  dimensionar el mercado, esa es la cifra que importaba.
+
+## Quiénes son, de verdad, las empresas vendibles
+
+Cataluña permite bajar al nombre: 201 empresas declaran retirada en 2024. Su
+perfil, sacado del propio fichero y de leer sus webs:
+
+| | |
+|---|---:|
+| Declaran retirada en 2024 | 201 |
+| En la provincia de Barcelona | 142 (71%) |
+| Con teléfono en el registro | 187 |
+| Con correo en el registro | 127 |
+| **Con dominio propio de correo** | **81 (40%)** |
+| De esos dominios, con web que responde | 53 |
+| Cuya portada menciona amianto | 30 |
+| Que ofrecen retirada explícitamente en su web | 22 |
+
+**Seis de cada diez empresas que retiran amianto en Cataluña no tienen ni
+dominio propio**, y de las que lo tienen, la mitad no menciona el amianto en su
+web. Son constructoras y empresas de demolición para las que el desamiantado es
+una línea más, invisible en internet.
+
+Eso corta en dos direcciones y conviene verlo antes de decidir:
+
+- **A favor:** para esa mayoría, una ficha en un directorio sería su única
+  presencia web buscable. El valor que se les ofrece es real, no cosmético.
+- **En contra:** una empresa que en veinte años no se ha hecho una web no es
+  una empresa que compre una suscripción por un formulario. Se vende por
+  teléfono, una a una, y eso pone un techo a la velocidad del negocio que no
+  depende del producto.
+
 ## El mercado, entonces
 
 - **Universo bruto:** ~7.800 inscripciones publicadas, más Cantabria, más las
