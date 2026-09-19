@@ -118,3 +118,19 @@ filters inside its SQL. Delist with
 `UPDATE tools SET delisted_at = now(), delist_reason = '…' WHERE slug = '…'`;
 relist by setting `delisted_at` to NULL. The first delisting pass (207 rows,
 18 September 2026) is backed up in `tools_delisted_backup_20260918`.
+
+## Analytics: what counts as a view
+
+`tool_events` records `detail_view` and `outbound_click` from the browser
+through the `track-event` edge function, which drops known crawler user
+agents. Rows carry `excluded_at` and `excluded_reason` for events that
+should not count; `refresh_tool_trending()` ignores them when it computes
+`views_30d`, `clicks_30d` and `trending_score`.
+
+The first 1,764 rows in the table (13–16 September 2026, before the crawler
+filter shipped) were marked this way: they are a sequential crawl, 1.05
+events per tool across nearly the whole catalogue, against 4–23 a day since.
+They were 98% of the table and fed both the homepage "Trending" row and the
+per-listing stats a maker sees on their own page, which is the number the
+boost is sold against. Marking rather than deleting keeps the decision
+reversible: set `excluded_at` back to NULL to count them again.

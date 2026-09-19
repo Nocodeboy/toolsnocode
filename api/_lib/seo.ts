@@ -402,7 +402,8 @@ function homeMeta(d: Awaited<ReturnType<typeof getHomeData>>): PageMeta {
   const sections: Array<[string, ToolCard[]]> = [
     ['Boosted this week', d.boosted],
     ["Editor's picks", d.picks],
-    ['Trending', d.trending],
+    // Mismo mínimo que la portada: una sola tarjeta no es una sección.
+    ['Trending', d.trending.length >= 3 ? d.trending : []],
     ['Recently added', d.recent],
   ];
   return {
@@ -417,7 +418,7 @@ function homeMeta(d: Awaited<ReturnType<typeof getHomeData>>): PageMeta {
       name: `${SITE_NAME}: AI & No-Code Tools Directory`,
       url: `${BASE_URL}/`,
       description: clip(description, 160),
-      mainEntity: itemList([...d.boosted, ...d.picks, ...d.trending].slice(0, 12)),
+      mainEntity: itemList([...d.boosted, ...d.picks, ...(d.trending.length >= 3 ? d.trending : [])].slice(0, 12)),
     },
     body: `<main>
 <h1>Discover the best AI &amp; no-code tools</h1>

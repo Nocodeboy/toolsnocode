@@ -11,6 +11,11 @@ import { STRIPE_PRODUCTS } from '../stripe-config';
 
 // El precio estaba escrito a mano en dos sitios de esta página. Sale del mismo
 // sitio que el checkout o acabará diciendo una cifra que nadie cobra.
+// Una fila de "Trending" con una sola tarjeta no es una sección, es un hueco.
+// Por debajo de esto la portada la omite: el dato existe, pero no da para
+// destacar nada todavía.
+const MIN_TRENDING = 3;
+
 const boost = STRIPE_PRODUCTS[0];
 const boostPrice = boost
   ? `$${boost.price.toFixed(2)}/${boost.mode === 'subscription' ? 'yr' : 'once'}`
@@ -260,7 +265,7 @@ export default function HomePage() {
       {/* Sin `trending_score > 0` esta sección no existe. No es una decisión de
           diseño: la consulta filtra por comportamiento real, y mientras no lo
           haya no hay nada que enseñar que no esté ya en "Recently Added". */}
-      {trendingTools.length > 0 && (
+      {trendingTools.length >= MIN_TRENDING && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <SectionHeader
             title="Trending"
