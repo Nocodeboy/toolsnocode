@@ -36,6 +36,12 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const meta = await describe(path);
     if (!meta) return new Response(html, { status: 200, headers: htmlHeaders() });
+    if (meta.redirect) {
+      return new Response(null, {
+        status: 301,
+        headers: { location: meta.redirect, 'cache-control': 'public, s-maxage=3600' },
+      });
+    }
     return new Response(injectHead(html, meta), { status: meta.status ?? 200, headers: htmlHeaders() });
   } catch (err) {
     console.error('seo injection failed, serving plain html:', err);

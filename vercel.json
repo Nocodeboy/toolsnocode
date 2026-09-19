@@ -118,6 +118,16 @@
       "destination": "/app.html"
     },
     {
+      "source": "/:path((?!assets/|api/).*)",
+      "destination": "/api/page?p=/:path",
+      "missing": [
+        {
+          "type": "header",
+          "key": "x-seo-bypass"
+        }
+      ]
+    },
+    {
       "source": "/((?!assets/).*)",
       "destination": "/app.html"
     }

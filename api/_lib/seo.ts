@@ -36,6 +36,8 @@ export interface PageMeta {
   body?: string;
   /** 404 real cuando la fila no existe: un SPA devuelve 200 para todo, y eso es un soft-404. */
   status?: 200 | 404;
+  /** Ruta a la que redirigir con 301. La usa el mapeo de URLs del sitio anterior. */
+  redirect?: string;
 }
 
 export const esc = (s: string) =>
@@ -98,7 +100,61 @@ export async function describe(pathname: string): Promise<PageMeta | null> {
 
   if (/^\/?$/.test(pathname)) return homeMeta(await getHomeData());
 
+  const legacy = await legacyToolPath(pathname);
+  if (legacy) return legacy;
+
+  // Todo lo que no sea una ruta de la aplicación es un 404 de verdad. Un SPA
+  // responde 200 a cualquier cosa, así que las URLs del sitio anterior
+  // (`/ai-tools/<nombre>/r/<id>`) llevaban meses diciéndole a Google que
+  // existen, y con ellas cualquier errata. Lo que sí es ruta conocida pero no
+  // se resuelve aquí (expertos, tutoriales, legales, cuenta) sale intacto.
+  if (!isKnownRoute(pathname)) return notFound(pathname);
+
   return null; // el resto se sirve tal cual
+}
+
+const STATIC_ROUTES = new Set([
+  '/', '/tools', '/tools/new', '/categories', '/news', '/experts', '/experts/new',
+  '/tutorials', '/tutorials/new', '/projects', '/projects/new', '/pricing', '/success',
+  '/login', '/signup', '/auth', '/account', '/favorites',
+  '/legal/privacy', '/legal/terms', '/legal/cookies',
+]);
+
+const DYNAMIC_ROUTES = [
+  /^\/tools\/[a-z0-9-]+(\/edit)?$/,
+  /^\/categories\/[a-z0-9-]+(\/[a-z]+)?$/,
+  /^\/news\/[a-z0-9-]+$/,
+  /^\/experts\/[a-z0-9-]+(\/edit)?$/,
+  /^\/tutorials\/[a-z0-9-]+(\/edit)?$/,
+  /^\/projects\/[a-z0-9-]+(\/edit)?$/,
+];
+
+function isKnownRoute(pathname: string): boolean {
+  const p = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+  return STATIC_ROUTES.has(p) || DYNAMIC_ROUTES.some((re) => re.test(p));
+}
+
+/**
+ * URLs del sitio anterior: `/ai-tools/<Nombre>/r/<id de Airtable>`.
+ *
+ * Son enlaces entrantes reales, y hasta ahora caían en la página 404 del SPA
+ * con un 200 detrás. Si el nombre corresponde a una ficha que sigue publicada
+ * se redirige con 301, que es lo que conserva el enlace; si no, 404 honesto.
+ */
+async function legacyToolPath(pathname: string): Promise<PageMeta | null> {
+  const m = pathname.match(/^\/ai-tools\/([^/]+)(?:\/r\/[^/]+)?\/?$/i);
+  if (!m) return null;
+  const raw = decodeURIComponent(m[1]).toLowerCase();
+  const candidates = [
+    raw.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+    raw.replace(/[^a-z0-9]+/g, ''),
+  ].filter((c, i, a) => c && a.indexOf(c) === i);
+
+  for (const slug of candidates) {
+    const tool = await getTool(slug);
+    if (tool) return { ...notFound(pathname), redirect: `/tools/${tool.slug}` };
+  }
+  return notFound(pathname);
 }
 
 function notFound(path: string): PageMeta {
