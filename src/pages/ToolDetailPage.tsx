@@ -8,6 +8,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { trackToolEvent } from '../lib/events';
 import { useAuth } from '../contexts/AuthContext';
+import { isPricingSlug } from '../data/pricingPages';
 import { useFavorites } from '../hooks/useFavorites';
 import FavoriteButton from '../components/ui/FavoriteButton';
 import ClaimButton from '../components/ui/ClaimButton';
@@ -363,7 +364,17 @@ export default function ToolDetailPage() {
               )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-surface-500 flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Pricing</span>
-                <span className={`capitalize ${pricingColor[tool.pricing] || 'text-surface-300'}`}>{tool.pricing}</span>
+                {tool.category && isPricingSlug(tool.pricing) ? (
+                  <Link
+                    to={`/categories/${tool.category.slug}/${tool.pricing}`}
+                    title={`More ${tool.pricing} ${tool.category.name.toLowerCase()} tools`}
+                    className={`capitalize hover:underline underline-offset-2 ${pricingColor[tool.pricing] || 'text-surface-300'}`}
+                  >
+                    {tool.pricing}
+                  </Link>
+                ) : (
+                  <span className={`capitalize ${pricingColor[tool.pricing] || 'text-surface-300'}`}>{tool.pricing}</span>
+                )}
               </div>
               {tool.pricing_details && (
                 <p className="text-xs text-surface-500 pt-1">{tool.pricing_details}</p>
