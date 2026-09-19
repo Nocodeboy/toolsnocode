@@ -36,7 +36,7 @@ export interface ToolRow {
   name: string; slug: string; tagline: string | null; description: string | null;
   logo_url: string | null; screenshot_urls: string[] | null; pricing: string | null;
   website: string | null; is_boosted: boolean | null; updated_at: string | null;
-  category: { name: string; slug: string } | null;
+  category: { id: string; name: string; slug: string } | null;
 }
 export interface NewsRow {
   title: string; slug: string; summary: string; content: string | null;
@@ -45,7 +45,7 @@ export interface NewsRow {
 export interface CategoryRow { name: string; slug: string; description: string | null; id: string }
 
 export const getTool = (slug: string) =>
-  one<ToolRow>(`tools?select=name,slug,tagline,description,logo_url,screenshot_urls,pricing,website,is_boosted,updated_at,category:categories(name,slug)&slug=eq.${encodeURIComponent(slug)}&limit=1`);
+  one<ToolRow>(`tools?select=name,slug,tagline,description,logo_url,screenshot_urls,pricing,website,is_boosted,updated_at,category:categories(id,name,slug)&slug=eq.${encodeURIComponent(slug)}&limit=1`);
 
 export const getNewsList = (n = 20) =>
   rest<NewsRow>(`news?select=title,slug,summary,content,image_url,published_at,source,tags&order=published_at.desc&limit=${n}`);

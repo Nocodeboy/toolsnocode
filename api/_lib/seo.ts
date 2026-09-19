@@ -48,7 +48,15 @@ export async function describe(pathname: string): Promise<PageMeta | null> {
   const m = (re: RegExp) => pathname.match(re)?.[1];
 
   const toolSlug = m(/^\/tools\/([a-z0-9-]+)\/?$/);
-  if (toolSlug && toolSlug !== 'new') return toolMeta(toolSlug, await getTool(toolSlug));
+  if (toolSlug && toolSlug !== 'new') {
+    const tool = await getTool(toolSlug);
+    // Las alternativas son el enlazado interno de la ficha: sin ellas cada
+    // herramienta es una hoja suelta para el rastreador.
+    const alternatives = tool?.category
+      ? (await getCategoryTopTools(tool.category.id, 7)).filter((x) => x.slug !== tool.slug).slice(0, 6)
+      : [];
+    return toolMeta(toolSlug, tool, alternatives);
+  }
 
   const newsSlug = m(/^\/news\/([a-z0-9-]+)\/?$/);
   if (newsSlug) return newsMeta(newsSlug, await getNews(newsSlug));
@@ -95,7 +103,7 @@ function notFound(path: string): PageMeta {
   };
 }
 
-function toolMeta(slug: string, t: ToolRow | null): PageMeta {
+function toolMeta(slug: string, t: ToolRow | null, alternatives: { name: string; slug: string; tagline: string | null }[] = []): PageMeta {
   if (!t) return notFound(`/tools/${slug}`);
   const tagline = plain(t.tagline).replace(/[.!?]+$/, '');
   const desc = plain(t.description);
@@ -125,6 +133,13 @@ function toolMeta(slug: string, t: ToolRow | null): PageMeta {
         image: t.logo_url || t.screenshot_urls?.[0] || image,
         ...(t.pricing === 'free' ? { offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } } : {}),
       },
+      ...(alternatives.length > 0 ? [{
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: `${t.name} alternatives`,
+        numberOfItems: alternatives.length,
+        itemListElement: alternatives.map((a, i) => ({ '@type': 'ListItem', position: i + 1, url: `${BASE_URL}/tools/${a.slug}`, name: a.name })),
+      }] : []),
       {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
@@ -139,8 +154,10 @@ function toolMeta(slug: string, t: ToolRow | null): PageMeta {
     body: `<main><article>
 <h1>${esc(t.name)}</h1>
 ${tagline ? `<p>${esc(tagline)}</p>` : ''}
-${desc ? `<p>${esc(clip(desc, 600))}</p>` : ''}
+${(t.description ?? '').split(/\n\s*\n/).map((x) => plain(x)).filter(Boolean).map((x) => `<p>${esc(x)}</p>`).join('\n')}
 <p>${cat ? `Category: <a href="/categories/${esc(cat.slug)}">${esc(cat.name)}</a>. ` : ''}${t.pricing ? `Pricing: ${cat && isPricingSlug(t.pricing) ? `<a href="/categories/${esc(cat.slug)}/${t.pricing}">${esc(t.pricing)}</a>` : esc(t.pricing)}. ` : ''}${t.website ? `<a href="${esc(t.website)}" rel="noopener">Visit website</a>` : ''}</p>
+${alternatives.length > 0 ? `<h2>Alternatives to ${esc(t.name)}${cat ? ` in ${esc(cat.name)}` : ''}</h2>
+<ul>${alternatives.map((a) => `<li><a href="/tools/${esc(a.slug)}">${esc(a.name)}</a>${a.tagline ? ` — ${esc(clip(plain(a.tagline), 120))}` : ''}</li>`).join('')}</ul>` : ''}
 </article></main>`,
   };
 }
