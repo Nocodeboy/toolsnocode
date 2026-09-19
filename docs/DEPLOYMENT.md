@@ -92,7 +92,7 @@ otra — la firma de Stripe, o un secreto propio en tiempo constante:
 
 ```bash
 supabase functions deploy stripe-checkout stripe-webhook verify-tool-dns sitemap digest --no-verify-jwt
-supabase functions deploy stripe-resync stripe-portal track-event
+supabase functions deploy stripe-resync stripe-portal track-event claims-review
 ```
 
 | Función | Qué hace | Secrets que lee |
@@ -105,6 +105,7 @@ supabase functions deploy stripe-resync stripe-portal track-event
 | `sitemap` | Genera `/sitemap.xml` paginando PostgREST. Las 33 páginas de categoría se anuncian solo con `CATEGORY_PAGES_LIVE=true`. | `SITE_URL`, `CATEGORY_PAGES_LIVE` |
 | `track-event` | Registra `detail_view` / `outbound_click` en `tool_events`. Descarta crawlers por User-Agent y limita por IP. | — |
 | `digest` | `GET` devuelve los hechos de la semana (`weekly_digest_brief`); `POST` publica una edición del boletín o la rechaza si algún enlace interno no existe. Cabecera `X-Digest-Secret`. | `DIGEST_SECRET` |
+| `claims-review` | `GET ?status=pending` lista las reclamaciones de ficha con su contexto (ficha reclamada, email del reclamante y si coincide con el dominio de la web); `POST {id, decision, note?}` aprueba o rechaza. Aprobar pone `user_id` en la ficha. Cabecera `X-Claims-Secret`. | `CLAIMS_SECRET` |
 
 Todas leen además `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, que Supabase inyecta.
 
@@ -117,6 +118,7 @@ Secrets compartidos u opcionales:
 | `CATEGORY_PAGES_LIVE` | `true` cuando la build con `/categories` está en producción. Evita anunciar en el sitemap páginas que el SPA aún resuelve con su 404. |
 | `RESYNC_SECRET` | Autoriza `stripe-resync`. Generar con `openssl rand -hex 32`. |
 | `DIGEST_SECRET` | Autoriza `digest`. El mismo valor va en el entorno de Claude Code que ejecuta la rutina del boletín. |
+| `CLAIMS_SECRET` | Autoriza `claims-review`. Generar con `openssl rand -hex 32`. |
 
 **CORS**: la allow-list es compartida ([`_shared/cors.ts`](../supabase/functions/_shared/cors.ts)) y se configura con `ALLOWED_ORIGINS`. La coincidencia es exacta: los previews de Vercel cambian de URL en cada rama, así que hay que añadir el alias concreto en vez de un comodín — estos mismos orígenes validan las URLs de redirección de Stripe y un comodín ahí sería un open redirect.
 
@@ -134,6 +136,34 @@ Secrets compartidos u opcionales:
     -d '{"customer_id":"cus_…"}'
   ```
   (con `"inspect": true` no modifica nada; con `{"price_id":"price_…"}` describe un precio).
+
+### Reclamaciones de ficha
+
+Cuando alguien reclama una ficha (`claim_requests`), la fila nace en `pending` y
+solo su autor puede verla: no hay panel de administración y la tabla no tiene
+política de UPDATE, así que una reclamación sin revisar se queda ahí para
+siempre y el reclamante la ve pendiente en su cuenta. `claims-review` es la
+única vía para resolverlas.
+
+```bash
+# Qué hay pendiente, con la ficha y el email del reclamante
+curl -s "https://<project>.supabase.co/functions/v1/claims-review?status=pending" \
+  -H "apikey: <anon>" -H "Authorization: Bearer <anon>" \
+  -H "X-Claims-Secret: $CLAIMS_SECRET"
+
+# Resolver una
+curl -X POST https://<project>.supabase.co/functions/v1/claims-review \
+  -H "apikey: <anon>" -H "Authorization: Bearer <anon>" \
+  -H "X-Claims-Secret: $CLAIMS_SECRET" -H "Content-Type: application/json" \
+  -d '{"id":"<claim_id>","decision":"approve","note":"Verificado por email de dominio"}'
+```
+
+`email_matches_site` compara el dominio del correo del reclamante con el de la
+web de la herramienta: es la prueba que se sostiene sola, pero no basta por sí
+misma (un Gmail no es impostura y un dominio propio no acredita el cargo).
+Aprobar es un cambio de propiedad — da acceso a editar la ficha y a sus
+estadísticas — así que la función se niega (409) si la ficha ya tiene otro
+dueño, si ha desaparecido, o si la reclamación ya estaba revisada.
 
 ### Cron jobs
 
